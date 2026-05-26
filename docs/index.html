@@ -110,7 +110,7 @@ const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
 const PROXY='',MAX=3;
-let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei';
+let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed;
 const now2=new Date().toDateString();
 if(today!==now2){remaining=MAX;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+MAX);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
 remaining=Math.min(remaining,MAX+20);shareCount=Math.min(shareCount,3);
@@ -142,7 +142,6 @@ function updateUI(){
   localStorage.setItem('tianshu_share',shareCount);
 }
 
-let bonusUsed=false;
 function addBonus(){
   if(bonusUsed){toast('今日彩蛋已用过，明天再来');return}
   remaining+=2;bonusUsed=true;updateUI();toast('✨ +2 次，明天还有')
