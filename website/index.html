@@ -96,7 +96,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="form-group"><div class="form-label" id="questionLabel">你想问的</div><textarea id="question" placeholder="可以是事业、感情、抉择..."></textarea></div>
 <button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
-<div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 双方各得 2 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
+<div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
@@ -110,10 +110,10 @@ const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
 const PROXY='',MAX=3;
-let today=localStorage.getItem('tianshu_date')||'',remaining,currentMode='ziwei';
+let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei';
 const now2=new Date().toDateString();
-if(today!==now2){remaining=MAX;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+MAX)}
-remaining=Math.min(remaining,MAX+10);
+if(today!==now2){remaining=MAX;shareCount=0;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+MAX);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
+remaining=Math.min(remaining,MAX+20);shareCount=Math.min(shareCount,3);
 
 function getHistory(){try{return JSON.parse(localStorage.getItem('tianshu_history')||'[]')}catch(e){return[]}}
 function saveHistory(name,mode,q,answer){const h=getHistory();h.unshift({name,mode,q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
@@ -133,23 +133,27 @@ function switchMode(m){
 
 function updateUI(){
   document.getElementById('qNum').textContent=remaining;
-  document.getElementById('shareBox').classList.toggle('show',remaining<=0);
-  document.getElementById('submitBtn',document.querySelector('.btn-primary')).style.opacity=remaining<=0?'.4':'1';
+  const shareExhausted=shareCount>=3;
+  document.getElementById('shareBox').classList.toggle('show',remaining<=0&&!shareExhausted);
+  document.getElementById('shareLeft').textContent=3-shareCount;
+  document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
+  if(remaining<=0&&shareExhausted)showWxModal();
   localStorage.setItem('tianshu_remain',remaining);
+  localStorage.setItem('tianshu_share',shareCount);
 }
 
 let bonusUsed=false;
-function addBonus(){if(!bonusUsed){remaining+=5;bonusUsed=true;updateUI();toast('✨ 已获得 5 次额外解读');setTimeout(()=>{bonusUsed=false},60000)}}
+function addBonus(){if(!bonusUsed){remaining+=5;bonusUsed=true;updateUI();toast('✨ 已获得 5 次额外解读');setTimeout(()=>{bonusUsed=false},300000)}}
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
 
 const url=new URL(window.location.href);
-if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,MAX+10);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
+if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,MAX+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
 const modeParam=url.searchParams.get('mode');
 if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
 
 async function ask(){
-  if(remaining<=0){showWxModal();return}
+  if(remaining<=0){updateUI();return}
   const name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
   const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
 
@@ -199,7 +203,9 @@ async function ask(){
 }
 
 function share(){
+  if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚找${titles[currentMode]}看了命盘 👇 你也来试试`;
+  shareCount++;remaining+=2;updateUI();
   if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友');copy(txt+' '+link)}
   else if(navigator.share){navigator.share({title:'AI命理解读',text:txt,url:link}).catch(()=>{})}
   else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
