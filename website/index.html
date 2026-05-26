@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天枢 · 沈砚 · 言澈</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#0a0a1a 0%,#1a1040 30%,#0d1b2a 60%,#0a0a1a 100%);min-height:100vh;color:#e8d5b7;overflow-x:hidden}
+.stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.star{position:absolute;background:#e8d5b7;border-radius:50%;animation:twinkle var(--dur) ease-in-out infinite;animation-delay:var(--delay);opacity:0}
+@keyframes twinkle{0%,100%{opacity:0}50%{opacity:0.8}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.container{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:20px 16px 60px}
+.header{text-align:center;padding:30px 0 20px;animation:slideUp 0.8s ease-out}
+.header h1{font-size:32px;font-weight:200;letter-spacing:10px;margin-bottom:4px;background:linear-gradient(180deg,#e8d5b7 0%,#c9a96e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .sub{font-size:12px;color:rgba(232,213,183,.5);letter-spacing:4px}
+.abilities{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;animation:slideUp 0.8s ease-out 0.1s both}
+.ability-card{flex:1;min-width:80px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:12px 8px;text-align:center;font-size:11px}
+.ability-card .n{color:rgba(232,213,183,.8);margin-bottom:2px}
+.ability-card .d{color:rgba(232,213,183,.35);line-height:1.4}
+.ability-card .av{width:44px;height:44px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid rgba(201,169,110,.15);background-size:cover;background-position:center}
+.main-card{background:rgba(255,255,255,0.04);backdrop-filter:blur(30px);border-radius:22px;padding:24px 20px;border:1px solid rgba(255,255,255,0.08);animation:slideUp 0.8s ease-out 0.2s both}
+.quota{background:linear-gradient(135deg,rgba(201,169,110,0.1),rgba(201,169,110,0.05));border-radius:12px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.quota .qn{font-size:30px;font-weight:200;color:#ffd700;min-width:35px;text-align:center}
+.quota .qt{font-size:12px;color:rgba(232,213,183,.7);line-height:1.6}
+.mode-switch{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.mode-btn{flex:1;min-width:55px;padding:10px 4px;border:none;border-radius:10px;background:rgba(255,255,255,0.04);color:rgba(232,213,183,.35);font-size:10px;cursor:pointer;transition:all .3s;border:1px solid rgba(255,255,255,0.06);font-family:inherit;letter-spacing:0.5px}
+.mode-btn.active{background:rgba(201,169,110,.12);color:#e8d5b7;border-color:rgba(201,169,110,.3)}
+.form-group{margin-bottom:12px}
+.form-label{font-size:11px;color:rgba(232,213,183,.45);margin-bottom:5px}
+input,textarea{width:100%;padding:12px 14px;border:none;border-radius:10px;background:rgba(255,255,255,0.06);color:#e8d5b7;font-size:14px;outline:none;border:1px solid rgba(255,255,255,0.08);font-family:inherit}
+input:focus,textarea:focus{border-color:rgba(201,169,110,.4)}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.2)}
+textarea{height:80px;resize:none;line-height:1.6}
+.form-row{display:flex;gap:8px}
+.form-row .form-group{flex:1}.form-row .narrow{flex:0 0 70px}
+select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:#e8d5b7;border:1px solid rgba(255,255,255,0.08);font-size:13px;outline:none;text-align:center}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;cursor:pointer;letter-spacing:2px;transition:all .3s}
+.btn-primary{background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;margin-top:4px}
+.btn-share{background:linear-gradient(135deg,#e85d04,#dc2f02);color:#fff;font-size:13px}
+.share-area{text-align:center;margin-top:12px;padding:16px;background:rgba(220,47,2,0.08);border-radius:12px;border:1px solid rgba(220,47,2,0.15);display:none}
+.share-area.show{display:block}
+.result{background:rgba(255,255,255,0.05);border-radius:14px;padding:22px 18px;margin-top:20px;border:1px solid rgba(201,169,110,0.15);display:none;line-height:1.9;font-size:14px}
+.result.show{display:block;animation:slideUp 0.4s ease-out}
+.result .rh{font-size:10px;color:rgba(201,169,110,.5);letter-spacing:2px;margin-bottom:12px;text-align:center}
+.history{background:rgba(255,255,255,0.03);border-radius:14px;padding:16px;margin-bottom:18px;display:none;border:1px solid rgba(201,169,110,0.1)}
+.history.show{display:block}
+.history .ht{font-size:11px;color:rgba(201,169,110,.4);margin-bottom:10px}
+.history .hi{padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;color:rgba(232,213,183,.4)}
+.footer{text-align:center;padding:30px 0 15px;font-size:10px;color:rgba(255,255,255,.12);letter-spacing:2px;cursor:pointer;user-select:none}
+.footer:hover{color:rgba(201,169,110,.3)}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.92);color:#e8d5b7;padding:10px 24px;border-radius:20px;font-size:13px;z-index:999;display:none;border:1px solid rgba(201,169,110,.2)}
+.wechat-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center}
+.wechat-modal.show{display:flex}
+.wechat-card{background:linear-gradient(160deg,#0a0a1a,#1a1040);border:1px solid rgba(201,169,110,.25);border-radius:18px;padding:28px 22px;text-align:center;max-width:320px;width:90%;animation:slideUp 0.3s ease-out}
+.wechat-card h3{font-size:20px;font-weight:200;color:#ffd700;margin-bottom:8px;letter-spacing:2px}
+.wechat-card p{font-size:13px;color:rgba(232,213,183,.7);line-height:1.8;margin-bottom:18px}
+.wechat-card .wx-id{background:rgba(255,255,255,0.06);border-radius:10px;padding:14px;font-size:15px;color:#c9a96e;letter-spacing:1px;margin-bottom:14px;cursor:pointer;border:1px dashed rgba(201,169,110,.3);transition:all .3s}
+.wechat-card .wx-id:hover{background:rgba(201,169,110,0.1)}
+.wechat-card .btn-close{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:8px 24px;border-radius:8px;font-size:12px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+<div class="container">
+<div class="header"><h1 id="pageTitle">天 枢</h1><div class="sub">TIANSHU · AI DESTINY</div></div>
+
+<div class="abilities">
+<div class="ability-card"><div class="av" style="background:linear-gradient(135deg,#2d1b4e,#1a1a2e)">🔮</div><div class="n">天枢</div><div class="d">紫微斗数·十五载</div></div>
+<div class="ability-card"><div class="av" style="background:linear-gradient(135deg,#1b2e1b,#1a1a2e)">☯️</div><div class="n">沈砚</div><div class="d">八字命理·三十年</div></div>
+<div class="ability-card"><div class="av" style="background:linear-gradient(135deg,#2e1b2e,#1a1a2e)">🃏</div><div class="n">言澈</div><div class="d">塔罗占星·此刻</div></div>
+<div class="ability-card"><div class="av" style="background:linear-gradient(135deg,#1b2e2e,#1a1a2e)">⏳</div><div class="n">天枢</div><div class="d">大六壬·断时机</div></div>
+<div class="ability-card"><div class="av" style="background:linear-gradient(135deg,#2e2e1b,#1a1a2e)">🧭</div><div class="n">天枢</div><div class="d">奇门遁甲·定方位</div></div>
+</div>
+
+<div class="history" id="historyBox"><div class="ht">— 你上次问过 —</div><div id="historyList"></div></div>
+
+<div class="main-card">
+<div class="mode-switch">
+<button class="mode-btn active" data-mode="ziwei" onclick="switchMode('ziwei')">🔮 紫微</button>
+<button class="mode-btn" data-mode="bazi" onclick="switchMode('bazi')">☯️ 八字</button>
+<button class="mode-btn" data-mode="tarot" onclick="switchMode('tarot')">🃏 塔罗</button>
+<button class="mode-btn" data-mode="liuren" onclick="switchMode('liuren')">⏳ 六壬</button>
+<button class="mode-btn" data-mode="qimen" onclick="switchMode('qimen')">🧭 奇门</button>
+</div>
+
+<div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><b>加微信</b>或<b>点底部文字</b>解锁更多<br>0点重置</div></div>
+
+<div id="form-birthday">
+<div class="form-row"><div class="form-group"><div class="form-label">名字</div><input id="name" placeholder="怎么称呼你"></div><div class="narrow"><div class="form-label">性别</div><select id="gender"><option>男</option><option>女</option></select></div></div>
+<div class="form-group"><div class="form-label">出生时间</div><input id="birth" placeholder="如: 1990年5月20日午时"></div>
+</div>
+<div id="form-time" style="display:none"><div class="form-group"><div class="form-label">名字</div><input id="name2" placeholder="怎么称呼你"></div><div class="form-group"><div class="form-label">时间(留空=现在)</div><input id="nowtime" placeholder="留空则用当前时间"></div></div>
+<div id="form-tarot" style="display:none"><div class="form-group"><div class="form-label">名字</div><input id="name3" placeholder="怎么称呼你"></div></div>
+
+<div class="form-group"><div class="form-label" id="questionLabel">你想问的</div><textarea id="question" placeholder="可以是事业、感情、抉择..."></textarea></div>
+<button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
+<div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 双方各得 2 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
+</div>
+
+<div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
+<div class="footer" onclick="addBonus()">十五载命理 · 每一次解读都落盘</div>
+<div class="toast" id="toast"></div>
+<div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>还想聊？</h3><p>每天 3 次不够用？<br>加微信，直接送你 <b style="color:#ffd700">10 次</b></p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制微信号</p><button class="btn-close" onclick="closeWx()">先不用</button></div></div>
+</div>
+
+<script>
+const stars=document.getElementById('stars');
+for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
+
+const PROXY='',MAX=3;
+let today=localStorage.getItem('tianshu_date')||'',remaining,currentMode='ziwei';
+const now2=new Date().toDateString();
+if(today!==now2){remaining=MAX;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+MAX)}
+remaining=Math.min(remaining,MAX+10);
+
+function getHistory(){try{return JSON.parse(localStorage.getItem('tianshu_history')||'[]')}catch(e){return[]}}
+function saveHistory(name,mode,q,answer){const h=getHistory();h.unshift({name,mode,q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
+function loadHistory(){const h=getHistory();if(h.length>0){document.getElementById('historyBox').classList.add('show');document.getElementById('historyList').innerHTML=h.slice(0,3).map(i=>`<div class="hi">${i.time} · ${i.name}: ${i.q.slice(0,20)}...</div>`).join('')}}
+
+const titles={ziwei:'天 枢',bazi:'沈 砚',tarot:'言 澈',liuren:'天 枢',qimen:'天 枢'};
+const subtitles={ziwei:'紫微斗数 · 十五载',bazi:'八字命理 · 三十年',tarot:'塔罗占星 · 此刻',liuren:'大六壬 · 断时机',qimen:'奇门遁甲 · 定方位'};
+
+function switchMode(m){
+  currentMode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.querySelector(`[data-mode="${m}"]`).classList.add('active');
+  const nb=['ziwei','bazi'];document.getElementById('form-birthday').style.display=nb.includes(m)?'block':'none';
+  document.getElementById('form-time').style.display=(m==='liuren'||m==='qimen')?'block':'none';
+  document.getElementById('form-tarot').style.display=m==='tarot'?'block':'none';
+  document.getElementById('pageTitle').textContent=titles[m];
+  document.querySelector('.sub').textContent=subtitles[m];
+}
+
+function updateUI(){
+  document.getElementById('qNum').textContent=remaining;
+  document.getElementById('shareBox').classList.toggle('show',remaining<=0);
+  document.getElementById('submitBtn',document.querySelector('.btn-primary')).style.opacity=remaining<=0?'.4':'1';
+  localStorage.setItem('tianshu_remain',remaining);
+}
+
+let bonusUsed=false;
+function addBonus(){if(!bonusUsed){remaining+=5;bonusUsed=true;updateUI();toast('✨ 已获得 5 次额外解读');setTimeout(()=>{bonusUsed=false},60000)}}
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
+
+const url=new URL(window.location.href);
+if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,MAX+10);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
+const modeParam=url.searchParams.get('mode');
+if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
+
+async function ask(){
+  if(remaining<=0){showWxModal();return}
+  const name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
+  const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
+
+  const hist=getHistory().filter(h=>h.name===name);
+  const histCtx=hist.length>0?`记得这个人。${hist[0].time}问过:${hist[0].q}。你上次说:${hist[0].answer}。主动提。`:'';
+
+  let prompt,sp;
+  const loading={ziwei:'天枢排盘中',bazi:'沈砚排盘中',tarot:'言澈在洗牌...',liuren:'天枢起课中',qimen:'天枢排盘中'};
+
+  if(currentMode==='bazi'){
+    const birth=document.getElementById('birth').value.trim(),gender=document.getElementById('gender').value;
+    if(!birth){toast('八字需要出生时间');return}
+    prompt=`${name}，${gender}，${birth}。想问:${q}。${histCtx}`;
+    sp=`你是沈砚。八字30年。通子平盲派新派三派。温厚精准。看格局断吉凶。100-200字。称呼名字。${hist.length>0?'记得这个人。':''}`;
+  }else if(currentMode==='tarot'){
+    prompt=`${name}想问:${q}。${histCtx}`;
+    sp=`你是言澈。塔罗占星师。78张牌看此刻。温柔不敷衍。用一张牌说透。80-150字。称呼名字。${hist.length>0?'记得她上次的困惑。':''}`;
+  }else if(currentMode==='ziwei'){
+    const birth=document.getElementById('birth').value.trim(),gender=document.getElementById('gender').value;
+    if(!birth){toast('紫微需要出生时间');return}
+    prompt=`${name}，${gender}，${birth}。想问:${q}。${histCtx}`;
+    sp=`你是天枢。紫微斗数15年。排十二宫看格局。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`;
+  }else if(currentMode==='liuren'){
+    const t=document.getElementById('nowtime').value.trim()||'现在';
+    prompt=`${name}想问:${q}。${t}。${histCtx}`;
+    sp=`你是天枢。大六壬15年。起一课断吉凶。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`;
+  }else{
+    const t=document.getElementById('nowtime').value.trim()||'现在';
+    prompt=`${name}想问:${q}。${t}。${histCtx}`;
+    sp=`你是天枢。奇门遁甲15年。看方位时机。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`;
+  }
+
+  document.getElementById('result').classList.add('show');
+  document.getElementById('resultText').innerHTML=`${loading[currentMode]}...`;
+  remaining--;updateUI();
+
+  try{
+    const apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
+    const headers={'Content-Type':'application/json'};
+    if(!PROXY)headers['Authorization']='Bearer '+localStorage.getItem('ds_key')||'';
+    const r=await fetch(apiUrl,{method:'POST',headers,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sp},{role:'user',content:prompt}],temperature:0.9,max_tokens:400})});
+    const d=await r.json();const a=d.choices[0].message.content;
+    document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
+    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
+    saveHistory(name,currentMode,q,a);loadHistory();
+  }catch(e){document.getElementById('resultText').innerHTML='此刻无法感应，稍后再试';remaining++;updateUI()}
+}
+
+function share(){
+  const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚找${titles[currentMode]}看了命盘 👇 你也来试试`;
+  if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友');copy(txt+' '+link)}
+  else if(navigator.share){navigator.share({title:'AI命理解读',text:txt,url:link}).catch(()=>{})}
+  else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
+}
+function copy(t){navigator.clipboard.writeText(t)}
+
+function showWxModal(){document.getElementById('wechatModal').classList.add('show')}
+function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
+function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
+
+updateUI();loadHistory();
+</script>
+</body>
+</html>
