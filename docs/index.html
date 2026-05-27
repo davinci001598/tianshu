@@ -101,7 +101,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
 <div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
-<div class="footer" onclick="addBonus()">十五载命理 · 每一次解读都落盘</div>
+<div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>还想聊？</h3><p>每天 3 次不够用？<br>加微信，直接送你 <b style="color:#ffd700">10 次</b></p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制微信号</p><button class="btn-close" onclick="closeWx()">先不用</button></div></div>
 </div>
@@ -154,6 +154,7 @@ const url=new URL(window.location.href);
 if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,MAX+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
 const modeParam=url.searchParams.get('mode');
 if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
+if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
 
 async function ask(){
   if(remaining<=0){updateUI();return}
@@ -263,7 +264,17 @@ function richSp(mode,base){
   return base+' [洞察:'+ins.s.slice(0,50)+']';
 }
 
-// ═══ 洞察导出：前2条免费，第3条起付费 ═══
+// ═══ 洞察导出：前2条免费，第3条需解锁 ═══
+const UNLOCKED_KEY='tv2_unlocked';
+function isUnlocked(){return localStorage.getItem(UNLOCKED_KEY)==='1'}
+function tryUnlock(code){
+  // 与公众号回复的解锁码匹配（可定期更换）
+  const validCodes=(localStorage.getItem('tv2_codes')||'tz0601').split(',');
+  if(validCodes.includes(code.trim())){
+    localStorage.setItem(UNLOCKED_KEY,'1');toast('🔓 已解锁全部洞察');exportInsights();return true;
+  }
+  toast('解锁码不对，检查一下或关注公众号获取');return false;
+}
 function exportInsights(){
   const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
   let hist=[];const names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
@@ -273,21 +284,23 @@ function exportInsights(){
   hist.sort((a,b)=>a.t-b.t);
   if(!hist.length){toast('还没有洞察。多聊几次再来。');return}
   
-  const FREE=2;const total=hist.length;
-  let text=`🔮 天枢对你的了解\n━━━━━━━━━━\n`;
+  const FREE=2;const total=hist.length;const unlocked=isUnlocked();
+  let text=`🔮 我们眼中的你\n━━━━━━━━━━\n`;
   let freeCount=0;
   for(let i=0;i<hist.length;i++){
     const h=hist[i];
-    if(freeCount<FREE){
+    if(freeCount<FREE||unlocked){
       text+=`\n📍 第${i+1}次洞察 [${h.mode}]\n${h.s}\n`;
-      freeCount++;
+      if(freeCount<FREE)freeCount++;
     }else{
-      text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n关注公众号「理解心命」发送「我的洞察」解锁全部`;
+      text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n`;
+      text+=`关注公众号「理解心命」→ 底部点赞赏 → 发「解锁」\n`;
+      text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
       break;
     }
   }
-  text+=`\n\n━━━━━━━━━━\n${total}次洞察 · ${freeCount}条免费 · 剩下${total-freeCount}条待解锁`;
-  text+=`\n关注「理解心命」→ 发「我的洞察」`;
+  if(unlocked)text+=`\n━━━━━━━━━━\n🔓 已解锁 · 全部${total}条洞察`;
+  else text+=`\n\n━━━━━━━━━━\n${total}条洞察 · ${freeCount}条免费 · ${total-freeCount}条待解锁`;
   
   document.getElementById('result').classList.add('show');
   document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
