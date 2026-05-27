@@ -59,6 +59,13 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 .wechat-card .wx-id{background:rgba(255,255,255,0.06);border-radius:10px;padding:14px;font-size:15px;color:#c9a96e;letter-spacing:1px;margin-bottom:14px;cursor:pointer;border:1px dashed rgba(201,169,110,.3);transition:all .3s}
 .wechat-card .wx-id:hover{background:rgba(201,169,110,0.1)}
 .wechat-card .btn-close{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:8px 24px;border-radius:8px;font-size:12px;cursor:pointer}
+.pay-modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:1000;display:none;align-items:center;justify-content:center}
+.pay-modal.show{display:flex}
+.pay-card{background:linear-gradient(160deg,#0a0a1a,#1a1040);border:1px solid rgba(201,169,110,.25);border-radius:18px;padding:28px 22px;text-align:center;max-width:320px;width:90%;animation:slideUp 0.3s ease-out}
+.pay-card h3{font-size:20px;font-weight:200;color:#ffd700;margin-bottom:8px;letter-spacing:2px}
+.pay-card p{font-size:13px;color:rgba(232,213,183,.7);line-height:1.8;margin-bottom:18px}
+.pay-card .btn-pay{background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;padding:12px 32px;border-radius:10px;font-size:14px;letter-spacing:1px;cursor:pointer;border:none;width:100%;margin-bottom:10px}
+.pay-card .btn-later{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:8px 24px;border-radius:8px;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -104,17 +111,19 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>还想聊？</h3><p>每天 3 次不够用？<br>加微信，直接送你 <b style="color:#ffd700">10 次</b></p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制微信号</p><button class="btn-close" onclick="closeWx()">先不用</button></div></div>
+<div class="pay-modal" id="payModal"><div class="pay-card"><h3>它开始认识你了</h3><p>你已经和天枢聊了这么多次。<br>它看到了关于你的事——<br>你想看全吗？</p><p style="font-size:11px;color:rgba(201,169,110,.6)">关注「理解心命」<br>发刊词底部赞赏（随意）→ 发「解锁」<br>→ 拿感谢码 → 回来输入<br>→ 30天无限聊 + 全部洞察</p><button class="btn-pay" onclick="document.getElementById('payModal').classList.remove('show');exportInsights()">先看免费的</button><button class="btn-later" onclick="document.getElementById('payModal').classList.remove('show')">明天再来</button></div></div>
 </div>
 
 <script>
 const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
-const PROXY='',MAX=3;
-let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed;
+const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
+let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
 const now2=new Date().toDateString();
-if(today!==now2){remaining=MAX;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+MAX);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
-remaining=Math.min(remaining,MAX+20);shareCount=Math.min(shareCount,3);
+if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
+maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
+remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
 
 function getHistory(){try{return JSON.parse(localStorage.getItem('tianshu_history')||'[]')}catch(e){return[]}}
 function saveHistory(name,mode,q,answer){const h=getHistory();h.unshift({name,mode,q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
@@ -138,7 +147,7 @@ function updateUI(){
   document.getElementById('shareBox').classList.toggle('show',remaining<=0&&!shareExhausted);
   document.getElementById('shareLeft').textContent=3-shareCount;
   document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
-  if(remaining<=0&&shareExhausted)showWxModal();
+  if(remaining<=0&&shareExhausted&&!isUnlocked())showPayModal();
   localStorage.setItem('tianshu_remain',remaining);
   localStorage.setItem('tianshu_share',shareCount);
 }
@@ -151,7 +160,7 @@ function addBonus(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
 
 const url=new URL(window.location.href);
-if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,MAX+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
+if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
 const modeParam=url.searchParams.get('mode');
 if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
@@ -224,6 +233,7 @@ function share(){
 function copy(t){navigator.clipboard.writeText(t)}
 
 function showWxModal(){document.getElementById('wechatModal').classList.add('show')}
+function showPayModal(){document.getElementById('payModal').classList.add('show')}
 function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
 function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
 
@@ -276,7 +286,8 @@ function tryUnlock(code){
   if(validCodes.includes(code.trim())){
     const expire=Date.now()+30*86400000; // 30天后过期
     localStorage.setItem(UNLOCKED_KEY,String(expire));
-    const d=new Date(expire);toast(`🔓 已解锁 · ${d.getMonth()+1}/${d.getDate()}到期`);exportInsights();return true;
+    maxQuota=UNLOCKED_MAX;remaining=maxQuota;updateUI();
+    const d=new Date(expire);toast(`🔓 已解锁 · ${d.getMonth()+1}/${d.getDate()}到期 · 每天${UNLOCKED_MAX}次`);exportInsights();return true;
   }
   toast('解锁码不对');return false;
 }
@@ -299,7 +310,8 @@ function exportInsights(){
       if(freeCount<FREE)freeCount++;
     }else{
       text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n`;
-      text+=`赞赏解锁 → 30天有效\n`;
+      text+=`你已经和天枢聊了这么多次。它开始认识你了。\n想看到全部洞察？\n\n关注「理解心命」→ 发刊词赞赏 → 发「解锁」 → 回来输入\n`;
+      text+=`感谢码每7天更新\n`;
       text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
       break;
     }
