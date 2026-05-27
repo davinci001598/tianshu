@@ -83,6 +83,8 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="history" id="historyBox"><div class="ht">— 你上次问过 —</div><div id="historyList"></div></div>
 
+<div style="text-align:center;margin-bottom:18px;font-size:13px;color:rgba(232,213,183,.5);line-height:1.7;animation:slideUp 0.8s ease-out 0.15s both">不是来算命的。<br>是来让AI慢慢认识你的。<br><span style="color:rgba(232,213,183,.25);font-size:10px">当然——顺便算一下也行。</span></div>
+
 <div class="main-card">
 <div class="mode-switch">
 <button class="mode-btn active" data-mode="ziwei" onclick="switchMode('ziwei')">🔮 紫微</button>
@@ -110,7 +112,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
-<div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>还想聊？</h3><p>每天 3 次不够用？<br>加微信，直接送你 <b style="color:#ffd700">10 次</b></p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制微信号</p><button class="btn-close" onclick="closeWx()">先不用</button></div></div>
+<div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>想解锁全部？</h3><p>关注公众号「理解心命」<br>发刊词底部赞赏 → 发「解锁」拿码<br>→ 30天无限聊</p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制 → 去微信搜索关注</p><button class="btn-close" onclick="closeWx()">先免费聊</button></div></div>
 <div class="pay-modal" id="payModal"><div class="pay-card"><h3>它开始认识你了</h3><p>你已经和天枢聊了这么多次。<br>它看到了关于你的事——<br>你想看全吗？</p><p style="font-size:11px;color:rgba(201,169,110,.6)">关注「理解心命」<br>发刊词底部赞赏（随意）→ 发「解锁」<br>→ 拿感谢码 → 回来输入<br>→ 30天无限聊 + 全部洞察</p><button class="btn-pay" onclick="document.getElementById('payModal').classList.remove('show');exportInsights()">先看免费的</button><button class="btn-later" onclick="document.getElementById('payModal').classList.remove('show')">明天再来</button></div></div>
 </div>
 
@@ -224,10 +226,10 @@ async function ask(){
 
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
-  const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚找${titles[currentMode]}看了命盘 👇 你也来试试`;
+  const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇`;
   shareCount++;remaining+=2;updateUI();
   if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友');copy(txt+' '+link)}
-  else if(navigator.share){navigator.share({title:'AI命理解读',text:txt,url:link}).catch(()=>{})}
+  else if(navigator.share){navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).catch(()=>{})}
   else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
 }
 function copy(t){navigator.clipboard.writeText(t)}
