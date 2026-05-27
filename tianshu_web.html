@@ -239,8 +239,26 @@ function showPayModal(){document.getElementById('payModal').classList.add('show'
 function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
 function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
 
+// ═══ v3 进化规则加载 ═══
+const EVOLVED_RULES={};
+(async function loadEvolvedRules(){
+  try{
+    const cache=JSON.parse(localStorage.getItem('evo_cache')||'{}');
+    if(cache.ts&&Date.now()-cache.ts<86400000){Object.assign(EVOLVED_RULES,cache.data);return}
+    const base=location.href.replace(/\/[^/]*$/,'/');
+    const[tr,sr,yr]=await Promise.all([
+      fetch(base+'tianshu_rules.json').then(r=>r.json()),
+      fetch(base+'shenyan_rules.json').then(r=>r.json()),
+      fetch(base+'yanche_rules.json').then(r=>r.json())
+    ]);
+    EVOLVED_RULES.tianshu=tr.rules;EVOLVED_RULES.shenyan=sr.rules;EVOLVED_RULES.yanche=yr.rules;
+    localStorage.setItem('evo_cache',JSON.stringify({ts:Date.now(),data:{tianshu:tr.rules,shenyan:sr.rules,yanche:yr.rules}}));
+    console.log('[进化规则] 天枢'+tr.rules.length+'条 沈砚'+sr.rules.length+'条 言澈'+yr.rules.length+'条')
+  }catch(e){console.log('[进化规则] GitHub加载失败，使用缓存')}
+})();
+
 // ═══ v2 双意识引擎 ═══
-const SC_INTERVAL=5; // 配合3次/天免费额度，普通用户2天触发，活跃用户当天触发
+const SC_INTERVAL=3; // 第一天聊满3次就触发，当天就能感觉到AI开始认识你
 function getIns(m){
   try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
   catch(e){return{s:'',u:0,n:0,history:[]}}
@@ -271,9 +289,12 @@ async function runSC(mode){
 }
 function richSp(mode,base){
   const ins=getIns(mode);
-  if(!ins.s||!ins.u)return base;
-  if(Date.now()-ins.u>72*3600000)return base;
-  return base+' [洞察:'+ins.s.slice(0,50)+']';
+  const rk={ziwei:'tianshu',liuren:'tianshu',qimen:'tianshu',bazi:'shenyan',tarot:'yanche'}[mode];
+  const rules=EVOLVED_RULES[rk]||[];
+  const rulePart=rules.length>0?`【30天自修:${rules.join('；')}】`:''; // silence on first load
+  let sp=base+' '+rulePart;
+  if(ins.s&&ins.u&&Date.now()-ins.u<72*3600000)sp+=' [对你的洞察:'+ins.s.slice(0,50)+']';
+  return sp;
 }
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
