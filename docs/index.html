@@ -100,6 +100,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
+<div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
 <div class="footer" onclick="addBonus()">十五载命理 · 每一次解读都落盘</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>还想聊？</h3><p>每天 3 次不够用？<br>加微信，直接送你 <b style="color:#ffd700">10 次</b></p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制微信号</p><button class="btn-close" onclick="closeWx()">先不用</button></div></div>
@@ -228,8 +229,8 @@ function copyWx(){const id=document.getElementById('wxIdText').textContent;navig
 // ═══ v2 双意识引擎 ═══
 const SC_INTERVAL=5; // 配合3次/天免费额度，普通用户2天触发，活跃用户当天触发
 function getIns(m){
-  try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0}}
-  catch(e){return{s:'',u:0,n:0}}
+  try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
+  catch(e){return{s:'',u:0,n:0,history:[]}}
 }
 function setIns(m,d){const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');a[m]=d;localStorage.setItem('tv2_ins',JSON.stringify(a))}
 function getLog(){try{return JSON.parse(localStorage.getItem('tv2_log')||'[]')}catch(e){return[]}}
@@ -250,7 +251,8 @@ async function runSC(mode){
     if(!PROXY)h['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
     const r=await fetch(u,{method:'POST',headers:h,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是AI潜意识观察层。50字以内。精准。'},{role:'user',content:`你是${nm}的潜意识。观察过去${log.length}次对话:\n${lt}\n${dims[mode]}\n50字以内总结核心洞察。`}],temperature:0.7,max_tokens:120})});
     const d=await r.json();const ins=d.choices[0].message.content;
-    const p=getIns(mode);setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL});
+    const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:ins,mode}];
+    setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
     console.log('[潜意识·'+nm+']',ins.slice(0,60))
   }catch(e){console.log('[潜意识] 失败')}
 }
@@ -259,6 +261,36 @@ function richSp(mode,base){
   if(!ins.s||!ins.u)return base;
   if(Date.now()-ins.u>72*3600000)return base;
   return base+' [洞察:'+ins.s.slice(0,50)+']';
+}
+
+// ═══ 洞察导出：前2条免费，第3条起付费 ═══
+function exportInsights(){
+  const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
+  let hist=[];const names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
+  for(const[m,d] of Object.entries(all)){
+    if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m});
+  }
+  hist.sort((a,b)=>a.t-b.t);
+  if(!hist.length){toast('还没有洞察。多聊几次再来。');return}
+  
+  const FREE=2;const total=hist.length;
+  let text=`🔮 天枢对你的了解\n━━━━━━━━━━\n`;
+  let freeCount=0;
+  for(let i=0;i<hist.length;i++){
+    const h=hist[i];
+    if(freeCount<FREE){
+      text+=`\n📍 第${i+1}次洞察 [${h.mode}]\n${h.s}\n`;
+      freeCount++;
+    }else{
+      text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n关注公众号「理解心命」发送「我的洞察」解锁全部`;
+      break;
+    }
+  }
+  text+=`\n\n━━━━━━━━━━\n${total}次洞察 · ${freeCount}条免费 · 剩下${total-freeCount}条待解锁`;
+  text+=`\n关注「理解心命」→ 发「我的洞察」`;
+  
+  document.getElementById('result').classList.add('show');
+  document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
 }
 
 updateUI();loadHistory();
