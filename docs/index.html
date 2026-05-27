@@ -266,14 +266,19 @@ function richSp(mode,base){
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
 const UNLOCKED_KEY='tv2_unlocked';
-function isUnlocked(){return localStorage.getItem(UNLOCKED_KEY)==='1'}
+function isUnlocked(){
+  const v=localStorage.getItem(UNLOCKED_KEY);
+  if(!v||v==='0')return false;
+  return parseInt(v)>Date.now(); // 时间戳过期即失效
+}
 function tryUnlock(code){
-  // 与公众号回复的解锁码匹配（可定期更换）
   const validCodes=(localStorage.getItem('tv2_codes')||'tz0601').split(',');
   if(validCodes.includes(code.trim())){
-    localStorage.setItem(UNLOCKED_KEY,'1');toast('🔓 已解锁全部洞察');exportInsights();return true;
+    const expire=Date.now()+30*86400000; // 30天后过期
+    localStorage.setItem(UNLOCKED_KEY,String(expire));
+    const d=new Date(expire);toast(`🔓 已解锁 · ${d.getMonth()+1}/${d.getDate()}到期`);exportInsights();return true;
   }
-  toast('解锁码不对，检查一下或关注公众号获取');return false;
+  toast('解锁码不对');return false;
 }
 function exportInsights(){
   const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
@@ -294,13 +299,15 @@ function exportInsights(){
       if(freeCount<FREE)freeCount++;
     }else{
       text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n`;
-      text+=`关注公众号「理解心命」→ 底部点赞赏 → 发「解锁」\n`;
+      text+=`赞赏解锁 → 30天有效\n`;
       text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
       break;
     }
   }
-  if(unlocked)text+=`\n━━━━━━━━━━\n🔓 已解锁 · 全部${total}条洞察`;
-  else text+=`\n\n━━━━━━━━━━\n${total}条洞察 · ${freeCount}条免费 · ${total-freeCount}条待解锁`;
+  if(unlocked){
+    const rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
+    text+=`\n━━━━━━━━━━\n🔓 已解锁 · 剩余${rd}天 · 全部${total}条洞察`;
+  }else text+=`\n\n━━━━━━━━━━\n${total}条洞察 · ${freeCount}条免费 · ${total-freeCount}条待解锁`;
   
   document.getElementById('result').classList.add('show');
   document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
