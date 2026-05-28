@@ -223,8 +223,6 @@ function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.s
 
 var url=new URL(window.location.href);
 if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
-// 分享后下次打开自动+2
-if(localStorage.getItem('tianshu_share_bonus')==='1'){remaining=Math.min(remaining+2,maxQuota+20);localStorage.removeItem('tianshu_share_bonus');toast('分享奖励 +2 次 ✨')}
 var modeParam=url.searchParams.get('mode');
 if(modeParam&&['ziwei','bazi','tarot','liuren','qimen'].indexOf(modeParam)>=0){switchMode(modeParam)}
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
@@ -364,11 +362,14 @@ function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   var link=url.origin+url.pathname+'?ref='+Date.now(),txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
   shareCount++;updateUI();
-  // 分享后下次打开页面自动+2
-  localStorage.setItem('tianshu_share_bonus','1');
-  if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友（已复制链接）');copy(txt+' '+link)}
-  else if(navigator.share){navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).catch(function(){})}
-  else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
+  if(/MicroMessenger/i.test(navigator.userAgent)){
+    copy(txt+' '+link);toast('📱 已复制，点右上角分享给朋友');
+    remaining+=2;updateUI();
+  }else if(navigator.share){
+    navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(function(){remaining+=2;updateUI();toast('分享成功 +2 ✨')}).catch(function(){shareCount--;updateUI()})
+  }else{
+    copy(txt+' '+link);remaining+=2;updateUI();toast('🔗 已复制，发给好友 +2 ✨')
+  }
 }
 function copy(t){navigator.clipboard.writeText(t)}
 
