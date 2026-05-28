@@ -131,6 +131,8 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
       try{fn(resolve,reject)}catch(e){reject(e)}
     };
     window.Promise.all=function(arr){return new Promise(function(resolve,reject){var results=[],count=0;if(!arr.length)resolve(results);for(var i=0;i<arr.length;i++){(function(idx){arr[idx].then(function(v){results[idx]=v;count++;if(count===arr.length)resolve(results)},reject)})(i)}})};
+    window.Promise.resolve=function(v){return new Promise(function(resolve){resolve(v)})};
+    window.Promise.reject=function(e){return new Promise(function(resolve,reject){reject(e)})};
   }
   // fetch polyfill (based on XMLHttpRequest)
   if(!window.fetch){
