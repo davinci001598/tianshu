@@ -364,8 +364,10 @@ function share(){
   if(/MicroMessenger/i.test(navigator.userAgent)){
     copy(txt+' '+link);
     shareCount++;updateUI();
-    document.getElementById('shareBoxInner').innerHTML='已复制链接<br>分享到任意对话框后<br><button class="btn btn-share" onclick="confirmShare()" style="margin-top:8px;font-size:12px;padding:8px 20px">✓ 已分享，点此确认</button>';
+    document.getElementById('shareBoxInner').innerHTML='已复制链接<br>分享到任意对话框即可<br><span style="font-size:11px;color:rgba(201,169,110,.4)" id="shareTimer">5秒后自动确认</span>';
     document.getElementById('shareBox').classList.add('show');
+    var count=5;
+    window._shareTimer=setInterval(function(){count--;document.getElementById('shareTimer').textContent=count+'秒后自动确认';if(count<=0){clearInterval(window._shareTimer);confirmShare()}},1000);
   }else if(navigator.share){
     navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(function(){shareCount++;remaining+=2;updateUI();toast('分享成功 +2 ✨')}).catch(function(){})
   }else{
@@ -373,6 +375,7 @@ function share(){
   }
 }
 function confirmShare(){
+  if(window._shareTimer)clearInterval(window._shareTimer);
   remaining+=2;updateUI();
   document.getElementById('shareBox').classList.remove('show');
   toast('+2 次 ✨')
