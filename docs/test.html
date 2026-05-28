@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测试</title>
+<style>
+body{margin:0;padding:20px;font-family:sans-serif;background:#0a0a1a;color:#e8d5b7;text-align:center}
+button{padding:20px 40px;font-size:20px;background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;border:none;border-radius:12px;cursor:pointer;margin:20px}
+.green{color:#4f4}
+</style>
+</head>
+<body>
+<h1>JS 测试</h1>
+<p id="status">等待点击...</p>
+<button onclick="test()">点我测试</button>
+<script>
+document.getElementById('status').innerHTML='<span class="green">JS 已加载 ✅</span>';
+function test(){
+  document.getElementById('status').innerHTML='<span class="green">按钮点击成功 ✅</span>';
+}
+</script>
+</body>
+</html>
