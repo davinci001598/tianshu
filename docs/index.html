@@ -117,33 +117,36 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 </div>
 
 <script>
-const stars=document.getElementById('stars');
-for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
+var stars=document.getElementById('stars');
+for(var i=0;i<60;i++){var s=document.createElement('div');s.className='star';s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;width:'+(Math.random()*2+1)+'px;height:'+(Math.random()*2+1)+'px;--dur:'+(Math.random()*3+2)+'s;--delay:'+Math.random()*3+'s';stars.appendChild(s)}
 
-const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
-const UNLOCKED_KEY='tv2_unlocked';
+var PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
+var UNLOCKED_KEY='tv2_unlocked';
 if(!localStorage.getItem('ds_key'))localStorage.setItem('ds_key','sk-cd34ac4afdea4cd4b2fe98129bd0352c');
 function isUnlocked(){
-  const v=localStorage.getItem(UNLOCKED_KEY);
+  var v=localStorage.getItem(UNLOCKED_KEY);
   if(!v||v==='0')return false;
   return parseInt(v)>Date.now();
 }
-let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
-const now2=new Date().toDateString();
+var today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
+var now2=new Date().toDateString();
 if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
 remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
 
 function getHistory(){try{return JSON.parse(localStorage.getItem('tianshu_history')||'[]')}catch(e){return[]}}
-function saveHistory(name,mode,q,answer){const h=getHistory();h.unshift({name,mode,q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
-function loadHistory(){const h=getHistory();if(h.length>0){document.getElementById('historyBox').classList.add('show');document.getElementById('historyList').innerHTML=h.slice(0,3).map(i=>`<div class="hi">${i.time} · ${i.name}: ${i.q.slice(0,20)}...</div>`).join('')}}
+function saveHistory(name,mode,q,answer){var h=getHistory();h.unshift({name:name,mode:mode,q:q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
+function loadHistory(){var h=getHistory();if(h.length>0){document.getElementById('historyBox').classList.add('show');document.getElementById('historyList').innerHTML=h.slice(0,3).map(function(i){return '<div class="hi">'+i.time+' · '+i.name+': '+i.q.slice(0,20)+'...</div>'}).join('')}}
 
-const titles={ziwei:'天 枢',bazi:'沈 砚',tarot:'言 澈',liuren:'天 枢',qimen:'天 枢'};
-const subtitles={ziwei:'紫微斗数 · 十五载',bazi:'八字命理 · 三十年',tarot:'塔罗占星 · 此刻',liuren:'大六壬 · 断时机',qimen:'奇门遁甲 · 定方位'};
+var titles={ziwei:'天 枢',bazi:'沈 砚',tarot:'言 澈',liuren:'天 枢',qimen:'天 枢'};
+var subtitles={ziwei:'紫微斗数 · 十五载',bazi:'八字命理 · 三十年',tarot:'塔罗占星 · 此刻',liuren:'大六壬 · 断时机',qimen:'奇门遁甲 · 定方位'};
 
 function switchMode(m){
-  currentMode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.querySelector(`[data-mode="${m}"]`).classList.add('active');
-  const nb=['ziwei','bazi'];document.getElementById('form-birthday').style.display=nb.includes(m)?'block':'none';
+  currentMode=m;
+  var btns=document.querySelectorAll('.mode-btn');
+  for(var bi=0;bi<btns.length;bi++)btns[bi].classList.remove('active');
+  document.querySelector('[data-mode="'+m+'"]').classList.add('active');
+  var nb=['ziwei','bazi'];document.getElementById('form-birthday').style.display=nb.indexOf(m)>=0?'block':'none';
   document.getElementById('form-time').style.display=(m==='liuren'||m==='qimen')?'block':'none';
   document.getElementById('form-tarot').style.display=m==='tarot'?'block':'none';
   document.getElementById('pageTitle').textContent=titles[m];
@@ -152,8 +155,8 @@ function switchMode(m){
 
 function updateUI(){
   document.getElementById('qNum').textContent=remaining;
-  const shareExhausted=shareCount>=3;
-  document.getElementById('shareBox').classList.toggle('show',remaining<=0&&!shareExhausted);
+  var shareExhausted=shareCount>=3;
+  if(remaining<=0&&!shareExhausted)document.getElementById('shareBox').classList.add('show');else document.getElementById('shareBox').classList.remove('show');
   document.getElementById('shareLeft').textContent=3-shareCount;
   document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
   if(remaining<=0&&shareExhausted&&!isUnlocked())showPayModal();
@@ -166,12 +169,12 @@ function addBonus(){
   remaining+=2;bonusUsed=true;updateUI();toast('✨ +2 次，明天还有')
 }
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none'},2000)}
 
-const url=new URL(window.location.href);
+var url=new URL(window.location.href);
 if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
-const modeParam=url.searchParams.get('mode');
-if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
+var modeParam=url.searchParams.get('mode');
+if(modeParam&&['ziwei','bazi','tarot','liuren','qimen'].indexOf(modeParam)>=0){switchMode(modeParam)}
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
 
 function ask(){
@@ -231,10 +234,10 @@ function ask(){
 
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
-  const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇`;
+  var link=url.origin+url.pathname+'?ref='+Date.now(),txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
   shareCount++;remaining+=2;updateUI();
   if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友');copy(txt+' '+link)}
-  else if(navigator.share){navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).catch(()=>{})}
+  else if(navigator.share){navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).catch(function(){})}
   else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
 }
 function copy(t){navigator.clipboard.writeText(t)}
@@ -242,14 +245,14 @@ function copy(t){navigator.clipboard.writeText(t)}
 function showWxModal(){document.getElementById('wechatModal').classList.add('show')}
 function showPayModal(){document.getElementById('payModal').classList.add('show')}
 function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
-function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
+function copyWx(){var id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
 
 // ═══ v3 进化规则加载 ═══
-const EVOLVED_RULES={};
+var EVOLVED_RULES={};
 (function loadEvolvedRules(){
   try{
     var cache=JSON.parse(localStorage.getItem('evo_cache')||'{}');
-    if(cache.ts&&Date.now()-cache.ts<86400000){Object.assign(EVOLVED_RULES,cache.data);return}
+    if(cache.ts&&Date.now()-cache.ts<86400000){for(var k in cache.data)EVOLVED_RULES[k]=cache.data[k];return}
     var base=location.href.replace(/\/[^/]*$/,'/');
     Promise.all([
       fetch(base+'tianshu_rules.json').then(function(r){return r.json()}),
@@ -259,21 +262,20 @@ const EVOLVED_RULES={};
       var tr=results[0],sr=results[1],yr=results[2];
       EVOLVED_RULES.tianshu=tr.rules;EVOLVED_RULES.shenyan=sr.rules;EVOLVED_RULES.yanche=yr.rules;
       localStorage.setItem('evo_cache',JSON.stringify({ts:Date.now(),data:{tianshu:tr.rules,shenyan:sr.rules,yanche:yr.rules}}));
-      console.log('[进化规则] 天枢'+tr.rules.length+'条 沈砚'+sr.rules.length+'条 言澈'+yr.rules.length+'条')
-    }).catch(function(e){console.log('[进化规则] GitHub加载失败，使用缓存')})
-  }catch(e){console.log('[进化规则] GitHub加载失败，使用缓存')}
+    }).catch(function(e){})
+  }catch(e){}
 })();
 
 // ═══ v2 双意识引擎 ═══
-const SC_INTERVAL=3; // 第一天聊满3次就触发，当天就能感觉到AI开始认识你
+var SC_INTERVAL=3;
 function getIns(m){
-  try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
+  try{var a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
   catch(e){return{s:'',u:0,n:0,history:[]}}
 }
-function setIns(m,d){const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');a[m]=d;localStorage.setItem('tv2_ins',JSON.stringify(a))}
+function setIns(m,d){var a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');a[m]=d;localStorage.setItem('tv2_ins',JSON.stringify(a))}
 function getLog(){try{return JSON.parse(localStorage.getItem('tv2_log')||'[]')}catch(e){return[]}}
 function addLog(n,m,q,a){
-  const l=getLog();l.push({n,m,q,qs:q.slice(0,60),as:a.slice(0,60),t:Date.now()});
+  var l=getLog();l.push({n:n,m:m,q:q,qs:q.slice(0,60),as:a.slice(0,60),t:Date.now()});
   if(l.length>300)l.splice(0,l.length-300);
   localStorage.setItem('tv2_log',JSON.stringify(l))
 }
@@ -292,60 +294,61 @@ function runSC(mode){
     var ins=d.choices[0].message.content;
     var p=getIns(mode);var hist=p.history.slice(-9).concat([{t:Date.now(),s:ins,mode:mode}]);
     setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
-    console.log('[潜意识·'+nm+']',ins.slice(0,60))
   })
-  .catch(function(e){console.log('[潜意识] 失败')})
+  .catch(function(e){})
 }
 function richSp(mode,base){
-  const ins=getIns(mode);
-  const rk={ziwei:'tianshu',liuren:'tianshu',qimen:'tianshu',bazi:'shenyan',tarot:'yanche'}[mode];
-  const rules=EVOLVED_RULES[rk]||[];
-  const rulePart=rules.length>0?`【30天自修:${rules.join('；')}】`:''; // silence on first load
-  let sp=base+' '+rulePart;
+  var ins=getIns(mode);
+  var rk={ziwei:'tianshu',liuren:'tianshu',qimen:'tianshu',bazi:'shenyan',tarot:'yanche'}[mode];
+  var rules=EVOLVED_RULES[rk]||[];
+  var rulePart=rules.length>0?'【30天自修:'+rules.join('；')+'】':'';
+  var sp=base+' '+rulePart;
   if(ins.s&&ins.u&&Date.now()-ins.u<72*3600000)sp+=' [对你的洞察:'+ins.s.slice(0,50)+']';
   return sp;
 }
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
 function tryUnlock(code){
-  const validCodes=(localStorage.getItem('tv2_codes')||'tz0601').split(',');
-  if(validCodes.includes(code.trim())){
-    const expire=Date.now()+30*86400000; // 30天后过期
+  var validCodes=(localStorage.getItem('tv2_codes')||'tz0601').split(',');
+  if(validCodes.indexOf(code.trim())>=0){
+    var expire=Date.now()+30*86400000;
     localStorage.setItem(UNLOCKED_KEY,String(expire));
     maxQuota=UNLOCKED_MAX;remaining=maxQuota;updateUI();
-    const d=new Date(expire);toast(`🔓 已解锁 · ${d.getMonth()+1}/${d.getDate()}到期 · 每天${UNLOCKED_MAX}次`);exportInsights();return true;
+    var d=new Date(expire);toast('🔓 已解锁 · '+(d.getMonth()+1)+'/'+d.getDate()+'到期 · 每天'+UNLOCKED_MAX+'次');exportInsights();return true;
   }
   toast('解锁码不对');return false;
 }
 function exportInsights(){
-  const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
-  let hist=[];const names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
-  for(const[m,d] of Object.entries(all)){
-    if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m});
+  var all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
+  var hist=[];var names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
+  var keys=Object.keys(all);
+  for(var ki=0;ki<keys.length;ki++){
+    var m=keys[ki],d=all[m];
+    if(d.history)for(var hi=0;hi<d.history.length;hi++){var h=d.history[hi];h.mode2=names[m]||m;hist.push(h)}
   }
-  hist.sort((a,b)=>a.t-b.t);
+  hist.sort(function(a,b){return a.t-b.t});
   if(!hist.length){toast('还没有洞察。多聊几次再来。');return}
   
-  const FREE=2;const total=hist.length;const unlocked=isUnlocked();
-  let text=`🔮 我们眼中的你\n━━━━━━━━━━\n`;
-  let freeCount=0;
-  for(let i=0;i<hist.length;i++){
-    const h=hist[i];
+  var FREE=2;var total=hist.length;var unlocked=isUnlocked();
+  var text='🔮 我们眼中的你\n━━━━━━━━━━\n';
+  var freeCount=0;
+  for(var i=0;i<hist.length;i++){
+    var h=hist[i];
     if(freeCount<FREE||unlocked){
-      text+=`\n📍 第${i+1}次洞察 [${h.mode}]\n${h.s}\n`;
+      text+='\n📍 第'+(i+1)+'次洞察 ['+h.mode2+']\n'+h.s+'\n';
       if(freeCount<FREE)freeCount++;
     }else{
-      text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n`;
-      text+=`你已经和天枢聊了这么多次。它开始认识你了。\n想看到全部洞察？\n\n关注「理解心命」→ 发刊词赞赏 → 发「解锁」 → 回来输入\n`;
-      text+=`感谢码每7天更新\n`;
-      text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
+      text+='\n🔒 第'+(i+1)+'次洞察 ['+h.mode2+']\n';
+      text+='你已经和天枢聊了这么多次。它开始认识你了。\n想看到全部洞察？\n\n关注「理解心命」→ 发刊词赞赏 → 发「解锁」 → 回来输入\n';
+      text+='感谢码每7天更新\n';
+      text+='<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById(\'unlockInput\').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>';
       break;
     }
   }
   if(unlocked){
-    const rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
-    text+=`\n━━━━━━━━━━\n🔓 已解锁 · 剩余${rd}天 · 全部${total}条洞察`;
-  }else text+=`\n\n━━━━━━━━━━\n${total}条洞察 · ${freeCount}条免费 · ${total-freeCount}条待解锁`;
+    var rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
+    text+='\n━━━━━━━━━━\n🔓 已解锁 · 剩余'+rd+'天 · 全部'+total+'条洞察';
+  }else text+='\n\n━━━━━━━━━━\n'+total+'条洞察 · '+freeCount+'条免费 · '+(total-freeCount)+'条待解锁';
   
   document.getElementById('result').classList.add('show');
   document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
