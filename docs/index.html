@@ -117,6 +117,30 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 </div>
 
 <script>
+// ES5 polyfills for old WeChat X5 browser
+(function(){
+  // Promise polyfill (minimal)
+  if(!window.Promise){
+    window.Promise=function(fn){
+      var self=this,state='pending',value,handlers=[];
+      function resolve(v){if(state!=='pending')return;state='fulfilled';value=v;runHandlers()}
+      function reject(e){if(state!=='pending')return;state='rejected';value=e;runHandlers()}
+      function runHandlers(){for(var i=0;i<handlers.length;i++){var h=handlers[i];setTimeout(function(){if(state==='fulfilled'&&h.onFulfilled)h.onFulfilled(value);if(state==='rejected'&&h.onRejected)h.onRejected(value)},0)}}
+      this.then=function(onF,onR){var p=new Promise(function(){});handlers.push({onFulfilled:function(v){try{var r=onF?onF(v):v;if(r&&r.then)r.then(function(rv){p._resolve(rv)},function(re){p._reject(re)});else p._resolve(r)}catch(e){p._reject(e)}},onRejected:function(e){try{if(onR){var r=onR(e);if(r&&r.then)r.then(function(rv){p._resolve(rv)},function(re){p._reject(re)});else p._resolve(r)}else p._reject(e)}catch(ex){p._reject(ex)}}});return p};
+      this._resolve=resolve;this._reject=reject;this['catch']=function(onR){return this.then(null,onR)};
+      try{fn(resolve,reject)}catch(e){reject(e)}
+    };
+    window.Promise.all=function(arr){return new Promise(function(resolve,reject){var results=[],count=0;if(!arr.length)resolve(results);for(var i=0;i<arr.length;i++){(function(idx){arr[idx].then(function(v){results[idx]=v;count++;if(count===arr.length)resolve(results)},reject)})(i)}})};
+  }
+  // fetch polyfill (based on XMLHttpRequest)
+  if(!window.fetch){
+    window.fetch=function(u,o){o=o||{};return new Promise(function(resolve,reject){var x=new XMLHttpRequest();x.open(o.method||'GET',u,true);var h=o.headers||{};for(var k in h){if(h.hasOwnProperty(k))x.setRequestHeader(k,h[k])}x.onload=function(){var headers={get:function(n){return x.getResponseHeader(n)}};resolve({ok:x.status>=200&&x.status<300,status:x.status,headers:headers,json:function(){return Promise.resolve(JSON.parse(x.responseText))},text:function(){return Promise.resolve(x.responseText)}})};
+      x.onerror=function(){reject(new Error('Network error'))};x.send(o.body||null)})
+    }
+  }
+})();
+window.onerror=function(m,s,l,c,e){try{console.error('JS Error:',m,'line',l)}catch(x){}};
+
 var stars=document.getElementById('stars');
 for(var i=0;i<60;i++){var s=document.createElement('div');s.className='star';s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;width:'+(Math.random()*2+1)+'px;height:'+(Math.random()*2+1)+'px;--dur:'+(Math.random()*3+2)+'s;--delay:'+Math.random()*3+'s';stars.appendChild(s)}
 
