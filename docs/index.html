@@ -108,7 +108,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <button class="mode-btn" data-mode="qimen" onclick="switchMode('qimen')">🧭 奇门</button>
 </div>
 
-<div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><b>加微信</b>或<b>点底部文字</b>解锁更多<br>0点重置</div></div>
+<div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><span id="unlockHint" style="display:none;color:#ffd700;font-size:11px;cursor:pointer" onclick="showUnlockInput()">🔑 有感谢码？点此输入</span><span id="unlockRow" style="display:none"><input id="unlockCode" placeholder="输入感谢码" style="width:100px;display:inline;font-size:12px;padding:4px 8px;text-align:center;margin-top:4px"><br><button onclick="tryUnlockFromMain()" style="background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin-top:4px">解锁</button></span></div></div>
 
 <div id="form-birthday">
 <div class="form-row"><div class="form-group"><div class="form-label">名字</div><input id="name" placeholder="怎么称呼你"></div><div class="narrow"><div class="form-label">性别</div><select id="gender"><option>男</option><option>女</option></select></div></div>
@@ -136,7 +136,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>想解锁全部？</h3><p>关注公众号「理解心命」<br>发刊词底部赞赏 → 发「解锁」拿码<br>→ 30天无限聊</p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制 → 去微信搜索关注</p><button class="btn-close" onclick="closeWx()">先免费聊</button></div></div>
-<div class="pay-modal" id="payModal"><div class="pay-card"><h3>它开始认识你了</h3><p>你已经和天枢聊了这么多次。<br>它看到了关于你的事——<br>你想看全吗？</p><p style="font-size:11px;color:rgba(201,169,110,.6)">关注「理解心命」<br>发刊词底部赞赏（随意）→ 发「解锁」<br>→ 拿感谢码 → 回来输入<br>→ 30天无限聊 + 全部洞察</p><button class="btn-pay" onclick="document.getElementById('payModal').classList.remove('show');exportInsights()">先看免费的</button><button class="btn-later" onclick="document.getElementById('payModal').classList.remove('show')">明天再来</button></div></div>
+<div class="pay-modal" id="payModal"><div class="pay-card"><h3>次数用完啦</h3><p>关注「理解心命」<br>发刊词底部赞赏（随意）→ 发「解锁」<br>→ 拿感谢码 → 在下面输入</p><input id="payUnlockInput" placeholder="输入感谢码" style="width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#e8d5b7;font-size:14px;text-align:center;margin-bottom:12px;outline:none"><button class="btn-pay" onclick="if(tryUnlock(document.getElementById('payUnlockInput').value)){document.getElementById('payModal').classList.remove('show')}">解锁 30天无限聊</button><button class="btn-later" onclick="document.getElementById('payModal').classList.remove('show')">明天再来</button></div></div>
 </div>
 
 <script>
@@ -210,6 +210,7 @@ function updateUI(){
   document.getElementById('shareLeft').textContent=3-shareCount;
   document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
   if(remaining<=0&&shareExhausted&&!isUnlocked())showPayModal();
+  document.getElementById('unlockHint').style.display=isUnlocked()?'none':'inline';
   localStorage.setItem('tianshu_remain',remaining);
   localStorage.setItem('tianshu_share',shareCount);
 }
@@ -449,7 +450,7 @@ function richSp(mode,base){
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
 function tryUnlock(code){
-  var validCodes=(localStorage.getItem('tv2_codes')||'tz0601').split(',');
+  var validCodes=(localStorage.getItem('tv2_codes')||'tz0601,test888').split(',');
   if(validCodes.indexOf(code.trim())>=0){
     var expire=Date.now()+30*86400000;
     localStorage.setItem(UNLOCKED_KEY,String(expire));
@@ -457,6 +458,17 @@ function tryUnlock(code){
     var d=new Date(expire);toast('🔓 已解锁 · '+(d.getMonth()+1)+'/'+d.getDate()+'到期 · 每天'+UNLOCKED_MAX+'次');exportInsights();return true;
   }
   toast('解锁码不对');return false;
+}
+function showUnlockInput(){
+  document.getElementById('unlockHint').style.display='none';
+  document.getElementById('unlockRow').style.display='inline';
+}
+function tryUnlockFromMain(){
+  var code=document.getElementById('unlockCode').value.trim();
+  if(!code){toast('请输入感谢码');return}
+  if(!tryUnlock(code))return;
+  document.getElementById('unlockRow').style.display='none';
+  document.getElementById('payModal').classList.remove('show');
 }
 function exportInsights(){
   var all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
