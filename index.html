@@ -258,7 +258,7 @@ const EVOLVED_RULES={};
 })();
 
 // ═══ v2 双意识引擎 ═══
-const SC_INTERVAL=1; // 每聊一次就触发，不用等攒满
+const SC_INTERVAL=5; // 聊5次出一份洞察
 function getIns(m){
   try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
   catch(e){return{s:'',u:0,n:0,history:[]}}

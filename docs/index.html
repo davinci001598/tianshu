@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -66,20 +66,6 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 .pay-card p{font-size:13px;color:rgba(232,213,183,.7);line-height:1.8;margin-bottom:18px}
 .pay-card .btn-pay{background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;padding:12px 32px;border-radius:10px;font-size:14px;letter-spacing:1px;cursor:pointer;border:none;width:100%;margin-bottom:10px}
 .pay-card .btn-later{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:8px 24px;border-radius:8px;font-size:12px;cursor:pointer}
-/* 连续对话 */
-.chat-section{display:none;margin-top:18px;animation:slideUp 0.4s ease-out}
-.chat-section.show{display:block}
-.chat-msgs{background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;max-height:60vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.06)}
-.chat-msg{margin-bottom:14px;font-size:13px;line-height:1.7}
-.chat-msg.user{text-align:right;color:rgba(232,213,183,.6)}
-.chat-msg.user span{display:inline-block;background:rgba(201,169,110,.15);padding:8px 14px;border-radius:14px 14px 4px 14px;max-width:80%;text-align:left}
-.chat-msg.ai{color:rgba(232,213,183,.9)}
-.chat-msg.ai span{display:inline-block;padding:8px 0;max-width:100%}
-.chat-input-row{display:flex;gap:8px;margin-bottom:8px}
-.chat-input-row textarea{flex:1;height:44px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#e8d5b7;font-size:13px;resize:none;outline:none;font-family:inherit}
-.chat-input-row textarea:focus{border-color:rgba(201,169,110,.4)}
-.btn-chat{width:auto;padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;font-size:13px;letter-spacing:1px;border:none;cursor:pointer;white-space:nowrap}
-.btn-reset{width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;margin-top:8px}
 </style>
 </head>
 <body>
@@ -108,7 +94,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <button class="mode-btn" data-mode="qimen" onclick="switchMode('qimen')">🧭 奇门</button>
 </div>
 
-<div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><span id="unlockHint" style="display:none;color:#ffd700;font-size:11px;cursor:pointer" onclick="showUnlockInput()">🔑 有感谢码？点此输入</span><span id="unlockRow" style="display:none"><input id="unlockCode" placeholder="输入感谢码" style="width:100px;display:inline;font-size:12px;padding:4px 8px;text-align:center;margin-top:4px"><br><button onclick="tryUnlockFromMain()" style="background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;margin-top:4px">解锁</button></span></div></div>
+<div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><b>加微信</b>或<b>点底部文字</b>解锁更多<br>0点重置</div></div>
 
 <div id="form-birthday">
 <div class="form-row"><div class="form-group"><div class="form-label">名字</div><input id="name" placeholder="怎么称呼你"></div><div class="narrow"><div class="form-label">性别</div><select id="gender"><option>男</option><option>女</option></select></div></div>
@@ -119,84 +105,38 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="form-group"><div class="form-label" id="questionLabel">你想问的</div><textarea id="question" placeholder="可以是事业、感情、抉择..."></textarea></div>
 <button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
-<div class="share-area" id="shareBox"><div id="shareBoxInner"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div></div>
+<div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
-<div class="chat-section" id="chatSection">
-  <div class="chat-msgs" id="chatMsgs"></div>
-  <div class="chat-input-row">
-    <textarea id="followQ" placeholder="继续问..." rows="2"></textarea>
-    <button class="btn btn-chat" onclick="askFollowUp()">发送</button>
-  </div>
-  <button class="btn btn-reset" onclick="resetChat()">新话题</button>
-  <button class="btn btn-reset" style="background:rgba(220,47,2,0.08);border-color:rgba(220,47,2,0.2);color:rgba(232,93,4,.6);margin-top:4px" onclick="share()">分享好友 +2次</button>
-</div>
 <div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>想解锁全部？</h3><p>关注公众号「理解心命」<br>发刊词底部赞赏 → 发「解锁」拿码<br>→ 30天无限聊</p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制 → 去微信搜索关注</p><button class="btn-close" onclick="closeWx()">先免费聊</button></div></div>
-<div class="pay-modal" id="payModal"><div class="pay-card"><h3>次数用完啦</h3><p>关注「理解心命」<br>发刊词底部赞赏（随意）→ 发「解锁」<br>→ 拿感谢码 → 在下面输入</p><input id="payUnlockInput" placeholder="输入感谢码" style="width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#e8d5b7;font-size:14px;text-align:center;margin-bottom:12px;outline:none"><button class="btn-pay" onclick="if(tryUnlock(document.getElementById('payUnlockInput').value)){document.getElementById('payModal').classList.remove('show')}">解锁 30天无限聊</button><button class="btn-later" onclick="document.getElementById('payModal').classList.remove('show')">明天再来</button></div></div>
+<div class="pay-modal" id="payModal"><div class="pay-card"><h3>它开始认识你了</h3><p>你已经和天枢聊了这么多次。<br>它看到了关于你的事——<br>你想看全吗？</p><p style="font-size:11px;color:rgba(201,169,110,.6)">关注「理解心命」<br>发刊词底部赞赏（随意）→ 发「解锁」<br>→ 拿感谢码 → 回来输入<br>→ 30天无限聊 + 全部洞察</p><button class="btn-pay" onclick="document.getElementById('payModal').classList.remove('show');exportInsights()">先看免费的</button><button class="btn-later" onclick="document.getElementById('payModal').classList.remove('show')">明天再来</button></div></div>
 </div>
 
 <script>
-// ES5 polyfills for old WeChat X5 browser
-(function(){
-  // Promise polyfill (minimal)
-  if(!window.Promise){
-    window.Promise=function(fn){
-      var self=this,state='pending',value,handlers=[];
-      function resolve(v){if(state!=='pending')return;state='fulfilled';value=v;runHandlers()}
-      function reject(e){if(state!=='pending')return;state='rejected';value=e;runHandlers()}
-      function runHandlers(){for(var i=0;i<handlers.length;i++){var h=handlers[i];setTimeout(function(){if(state==='fulfilled'&&h.onFulfilled)h.onFulfilled(value);if(state==='rejected'&&h.onRejected)h.onRejected(value)},0)}}
-      this.then=function(onF,onR){var p=new Promise(function(){});handlers.push({onFulfilled:function(v){try{var r=onF?onF(v):v;if(r&&r.then)r.then(function(rv){p._resolve(rv)},function(re){p._reject(re)});else p._resolve(r)}catch(e){p._reject(e)}},onRejected:function(e){try{if(onR){var r=onR(e);if(r&&r.then)r.then(function(rv){p._resolve(rv)},function(re){p._reject(re)});else p._resolve(r)}else p._reject(e)}catch(ex){p._reject(ex)}}});return p};
-      this._resolve=resolve;this._reject=reject;this['catch']=function(onR){return this.then(null,onR)};
-      try{fn(resolve,reject)}catch(e){reject(e)}
-    };
-    window.Promise.all=function(arr){return new Promise(function(resolve,reject){var results=[],count=0;if(!arr.length)resolve(results);for(var i=0;i<arr.length;i++){(function(idx){arr[idx].then(function(v){results[idx]=v;count++;if(count===arr.length)resolve(results)},reject)})(i)}})};
-    window.Promise.resolve=function(v){return new Promise(function(resolve){resolve(v)})};
-    window.Promise.reject=function(e){return new Promise(function(resolve,reject){reject(e)})};
-  }
-  // fetch polyfill (based on XMLHttpRequest)
-  if(!window.fetch){
-    window.fetch=function(u,o){o=o||{};return new Promise(function(resolve,reject){var x=new XMLHttpRequest();x.open(o.method||'GET',u,true);var h=o.headers||{};for(var k in h){if(h.hasOwnProperty(k))x.setRequestHeader(k,h[k])}x.onload=function(){var headers={get:function(n){return x.getResponseHeader(n)}};resolve({ok:x.status>=200&&x.status<300,status:x.status,headers:headers,json:function(){return Promise.resolve(JSON.parse(x.responseText))},text:function(){return Promise.resolve(x.responseText)}})};
-      x.onerror=function(){reject(new Error('Network error'))};x.send(o.body||null)})
-    }
-  }
-})();
-window.onerror=function(m,s,l,c,e){try{console.error('JS Error:',m,'line',l)}catch(x){}};
+const stars=document.getElementById('stars');
+for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
-var stars=document.getElementById('stars');
-for(var i=0;i<60;i++){var s=document.createElement('div');s.className='star';s.style.cssText='left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;width:'+(Math.random()*2+1)+'px;height:'+(Math.random()*2+1)+'px;--dur:'+(Math.random()*3+2)+'s;--delay:'+Math.random()*3+'s';stars.appendChild(s)}
-
-var PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
-var UNLOCKED_KEY='tv2_unlocked';
-if(!localStorage.getItem('ds_key'))localStorage.setItem('ds_key','sk-cd34ac4afdea4cd4b2fe98129bd0352c');
-function isUnlocked(){
-  var v=localStorage.getItem(UNLOCKED_KEY);
-  if(!v||v==='0')return false;
-  return parseInt(v)>Date.now();
-}
-var today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
-var chatName='',chatCtx='',chatMode='',chatMsgs=[],isInChat=false,followCount=0;
-var now2=new Date().toDateString();
+const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
+let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
+const now2=new Date().toDateString();
 if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
 remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
 
 function getHistory(){try{return JSON.parse(localStorage.getItem('tianshu_history')||'[]')}catch(e){return[]}}
-function saveHistory(name,mode,q,answer){var h=getHistory();h.unshift({name:name,mode:mode,q:q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
-function loadHistory(){var h=getHistory();if(h.length>0){document.getElementById('historyBox').classList.add('show');document.getElementById('historyList').innerHTML=h.slice(0,3).map(function(i){return '<div class="hi">'+i.time+' · '+i.name+': '+i.q.slice(0,20)+'...</div>'}).join('')}}
+function saveHistory(name,mode,q,answer){const h=getHistory();h.unshift({name,mode,q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
+function loadHistory(){const h=getHistory();if(h.length>0){document.getElementById('historyBox').classList.add('show');document.getElementById('historyList').innerHTML=h.slice(0,3).map(i=>`<div class="hi">${i.time} · ${i.name}: ${i.q.slice(0,20)}...</div>`).join('')}}
 
-var titles={ziwei:'天 枢',bazi:'沈 砚',tarot:'言 澈',liuren:'天 枢',qimen:'天 枢'};
-var subtitles={ziwei:'紫微斗数 · 十五载',bazi:'八字命理 · 三十年',tarot:'塔罗占星 · 此刻',liuren:'大六壬 · 断时机',qimen:'奇门遁甲 · 定方位'};
+const titles={ziwei:'天 枢',bazi:'沈 砚',tarot:'言 澈',liuren:'天 枢',qimen:'天 枢'};
+const subtitles={ziwei:'紫微斗数 · 十五载',bazi:'八字命理 · 三十年',tarot:'塔罗占星 · 此刻',liuren:'大六壬 · 断时机',qimen:'奇门遁甲 · 定方位'};
 
 function switchMode(m){
-  currentMode=m;
-  var btns=document.querySelectorAll('.mode-btn');
-  for(var bi=0;bi<btns.length;bi++)btns[bi].classList.remove('active');
-  document.querySelector('[data-mode="'+m+'"]').classList.add('active');
-  var nb=['ziwei','bazi'];document.getElementById('form-birthday').style.display=nb.indexOf(m)>=0?'block':'none';
+  currentMode=m;document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));document.querySelector(`[data-mode="${m}"]`).classList.add('active');
+  const nb=['ziwei','bazi'];document.getElementById('form-birthday').style.display=nb.includes(m)?'block':'none';
   document.getElementById('form-time').style.display=(m==='liuren'||m==='qimen')?'block':'none';
   document.getElementById('form-tarot').style.display=m==='tarot'?'block':'none';
   document.getElementById('pageTitle').textContent=titles[m];
@@ -205,12 +145,11 @@ function switchMode(m){
 
 function updateUI(){
   document.getElementById('qNum').textContent=remaining;
-  var shareExhausted=shareCount>=3;
-  if(remaining<=0&&!shareExhausted)document.getElementById('shareBox').classList.add('show');else document.getElementById('shareBox').classList.remove('show');
+  const shareExhausted=shareCount>=3;
+  document.getElementById('shareBox').classList.toggle('show',remaining<=0&&!shareExhausted);
   document.getElementById('shareLeft').textContent=3-shareCount;
   document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
   if(remaining<=0&&shareExhausted&&!isUnlocked())showPayModal();
-  document.getElementById('unlockHint').style.display=isUnlocked()?'none':'inline';
   localStorage.setItem('tianshu_remain',remaining);
   localStorage.setItem('tianshu_share',shareCount);
 }
@@ -220,287 +159,196 @@ function addBonus(){
   remaining+=2;bonusUsed=true;updateUI();toast('✨ +2 次，明天还有')
 }
 
-function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none'},2000)}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
 
-var url=new URL(window.location.href);
+const url=new URL(window.location.href);
 if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
-var modeParam=url.searchParams.get('mode');
-if(modeParam&&['ziwei','bazi','tarot','liuren','qimen'].indexOf(modeParam)>=0){switchMode(modeParam)}
+const modeParam=url.searchParams.get('mode');
+if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
 
-function ask(){
+async function ask(){
   if(remaining<=0){updateUI();return}
-  var name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
-  var q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
+  const name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
+  const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
 
-  var hist=getHistory().filter(function(h){return h.name===name});
-  var histCtx=hist.length>0?'记得这个人。'+hist[0].time+'问过:'+hist[0].q+'。你上次说:'+hist[0].answer+'。主动提。':'';
+  const hist=getHistory().filter(h=>h.name===name);
+  const histCtx=hist.length>0?`记得这个人。${hist[0].time}问过:${hist[0].q}。你上次说:${hist[0].answer}。主动提。`:'';
 
-  var prompt,sp;
-  var loading={ziwei:'天枢排盘中',bazi:'沈砚排盘中',tarot:'言澈在洗牌...',liuren:'天枢起课中',qimen:'天枢排盘中'};
+  let prompt,sp;
+  const loading={ziwei:'天枢排盘中',bazi:'沈砚排盘中',tarot:'言澈在洗牌...',liuren:'天枢起课中',qimen:'天枢排盘中'};
 
   if(currentMode==='bazi'){
-    var birth=document.getElementById('birth').value.trim(),gender=document.getElementById('gender').value;
+    const birth=document.getElementById('birth').value.trim(),gender=document.getElementById('gender').value;
     if(!birth){toast('八字需要出生时间');return}
-    prompt=name+'，'+gender+'，'+birth+'。想问:'+q+'。'+histCtx;
-    sp=richSp('bazi','你是沈砚。八字30年。通子平盲派新派三派。温厚精准。看格局断吉凶。100-200字。称呼名字。'+(hist.length>0?'记得这个人。':''));
+    prompt=`${name}，${gender}，${birth}。想问:${q}。${histCtx}`;
+    sp=richSp('bazi',`你是沈砚。八字30年。通子平盲派新派三派。温厚精准。看格局断吉凶。100-200字。称呼名字。${hist.length>0?'记得这个人。':''}`);
   }else if(currentMode==='tarot'){
-    prompt=name+'想问:'+q+'。'+histCtx;
-    sp=richSp('tarot','你是言澈。塔罗占星师。78张牌看此刻。温柔不敷衍。用一张牌说透。80-150字。称呼名字。'+(hist.length>0?'记得她上次的困惑。':''));
+    prompt=`${name}想问:${q}。${histCtx}`;
+    sp=richSp('tarot',`你是言澈。塔罗占星师。78张牌看此刻。温柔不敷衍。用一张牌说透。80-150字。称呼名字。${hist.length>0?'记得她上次的困惑。':''}`);
   }else if(currentMode==='ziwei'){
-    var birth=document.getElementById('birth').value.trim(),gender=document.getElementById('gender').value;
+    const birth=document.getElementById('birth').value.trim(),gender=document.getElementById('gender').value;
     if(!birth){toast('紫微需要出生时间');return}
-    prompt=name+'，'+gender+'，'+birth+'。想问:'+q+'。'+histCtx;
-    sp=richSp('ziwei','你是天枢。紫微斗数15年。排十二宫看格局。精准。100-200字。称呼名字。'+(hist.length>0?'记得他。':''));
+    prompt=`${name}，${gender}，${birth}。想问:${q}。${histCtx}`;
+    sp=richSp('ziwei',`你是天枢。紫微斗数15年。排十二宫看格局。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
   }else if(currentMode==='liuren'){
-    var t=document.getElementById('nowtime').value.trim()||'现在';
-    prompt=name+'想问:'+q+'。'+t+'。'+histCtx;
-    sp=richSp('liuren','你是天枢。大六壬15年。起一课断吉凶。精准。100-200字。称呼名字。'+(hist.length>0?'记得他。':''));
+    const t=document.getElementById('nowtime').value.trim()||'现在';
+    prompt=`${name}想问:${q}。${t}。${histCtx}`;
+    sp=richSp('liuren',`你是天枢。大六壬15年。起一课断吉凶。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
   }else{
-    var t=document.getElementById('nowtime').value.trim()||'现在';
-    prompt=name+'想问:'+q+'。'+t+'。'+histCtx;
-    sp=richSp('qimen','你是天枢。奇门遁甲15年。看方位时机。精准。100-200字。称呼名字。'+(hist.length>0?'记得他。':''));
+    const t=document.getElementById('nowtime').value.trim()||'现在';
+    prompt=`${name}想问:${q}。${t}。${histCtx}`;
+    sp=richSp('qimen',`你是天枢。奇门遁甲15年。看方位时机。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
   }
 
   document.getElementById('result').classList.add('show');
-  document.getElementById('resultText').innerHTML=loading[currentMode]+'...';
+  document.getElementById('resultText').innerHTML=`${loading[currentMode]}...`;
   remaining--;updateUI();
 
-  var apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
-  var headers={'Content-Type':'application/json'};
-  if(!PROXY)headers['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
-  fetch(apiUrl,{method:'POST',headers:headers,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sp},{role:'user',content:prompt}],temperature:0.9,max_tokens:400})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var a=d.choices[0].message.content;
+  try{
+    const apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
+    const headers={'Content-Type':'application/json'};
+    if(!PROXY)headers['Authorization']='Bearer '+localStorage.getItem('ds_key')||'';
+    const r=await fetch(apiUrl,{method:'POST',headers,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sp},{role:'user',content:prompt}],temperature:0.9,max_tokens:400})});
+    const d=await r.json();const a=d.choices[0].message.content;
     document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
-    if(remaining<=1&&!isUnlocked())document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
+    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
     saveHistory(name,currentMode,q,a);loadHistory();
+    
+    // v2: 记录到对话日志 + 触发潜意识分析
     addLog(name,currentMode,q,a);
-    // 进入连续对话
-    chatName=name;chatCtx=prompt;chatMode=currentMode;chatMsgs=[{q:q,a:a}];isInChat=true;followCount=0;
-    showChat(q,a);
-    var totalForMode=getLog().filter(function(l){return l.mode===currentMode}).length;
-    if(totalForMode%SC_INTERVAL===0)runSC(currentMode);
-  })
-  .catch(function(e){document.getElementById('resultText').innerHTML='此刻无法感应，稍后再试';remaining++;updateUI()})
+    const totalForMode = getLog().filter(l=>l.mode===currentMode).length;
+    if(totalForMode % SC_INTERVAL === 0){
+      runSC(currentMode); // 不await，后台运行不阻塞
+    }
+  }catch(e){document.getElementById('resultText').innerHTML='此刻无法感应，稍后再试';remaining++;updateUI()}
 }
-
-// ═══ 连续对话 ═══
-function showChat(q,a){
-  // 隐藏主表单，显示聊天区
-  document.getElementById('form-birthday').style.display='none';
-  document.getElementById('form-time').style.display='none';
-  document.getElementById('form-tarot').style.display='none';
-  document.getElementById('question').parentElement.style.display='none';
-  document.querySelector('.btn-primary').style.display='none';
-  document.getElementById('shareBox').classList.remove('show');
-  // 显示聊天
-  var cs=document.getElementById('chatSection');cs.classList.add('show');
-  var cm=document.getElementById('chatMsgs');
-  cm.innerHTML='<div class="chat-msg user"><span>'+escHtml(q)+'</span></div><div class="chat-msg ai"><span>'+a.replace(/\n/g,'<br>')+'</span></div>';
-  document.getElementById('followQ').value='';
-  cm.scrollTop=cm.scrollHeight;
-}
-function askFollowUp(){
-  if(followCount>=5&&!isUnlocked()){showPayModal();return}
-  var q=document.getElementById('followQ').value.trim();if(!q){toast('请写下你想问的');return}
-  followCount++;
-  var loading={ziwei:'天枢在思考',bazi:'沈砚在思考',tarot:'言澈在洗牌',liuren:'天枢在起课',qimen:'天枢在排盘'};
-  // 追加用户消息
-  var cm=document.getElementById('chatMsgs');
-  cm.innerHTML+='<div class="chat-msg user"><span>'+escHtml(q)+'</span></div><div class="chat-msg ai"><span>'+loading[chatMode]+'...</span></div>';
-  cm.scrollTop=cm.scrollHeight;
-  document.getElementById('followQ').value='';
-  // 锁定输入
-  var btn=document.querySelector('.btn-chat');btn.disabled=true;btn.style.opacity='.5';
-  document.getElementById('followQ').disabled=true;
-  
-  var hist=getHistory().filter(function(h){return h.name===chatName});
-  var histCtx=hist.length>1?'你之前说过:'+hist.slice(1).map(function(h){return h.q+'→'+h.a}).join('；')+','+hist[0].q+'→'+hist[0].a:hist.length===1?'上次'+hist[0].q+'→'+hist[0].a:'';
-  var sp=richSp(chatMode,'继续正在进行的对话。称呼名字。认真回答。100-200字。'+histCtx);
-  var apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
-  var headers={'Content-Type':'application/json'};
-  if(!PROXY)headers['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
-  
-  // 构建完整对话上下文
-  var msgs=[{role:'system',content:sp}];
-  for(var i=0;i<chatMsgs.length;i++){msgs.push({role:'user',content:chatMsgs[i].q});msgs.push({role:'assistant',content:chatMsgs[i].a})}
-  msgs.push({role:'user',content:q});
-  
-  fetch(apiUrl,{method:'POST',headers:headers,body:JSON.stringify({model:'deepseek-chat',messages:msgs,temperature:0.9,max_tokens:400})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var a=d.choices[0].message.content;
-    chatMsgs.push({q:q,a:a});
-    saveHistory(chatName,chatMode,q,a);loadHistory();
-    addLog(chatName,chatMode,q,a);
-    // 替换加载消息
-    var msgs=document.getElementById('chatMsgs').querySelectorAll('.chat-msg.ai');
-    var last=msgs[msgs.length-1].querySelector('span');
-    last.innerHTML=a.replace(/\n/g,'<br>');
-    cm.scrollTop=cm.scrollHeight;
-    btn.disabled=false;btn.style.opacity='1';
-    document.getElementById('followQ').disabled=false;
-    document.getElementById('followQ').focus();
-  })
-  .catch(function(e){
-    btn.disabled=false;btn.style.opacity='1';
-    document.getElementById('followQ').disabled=false;
-    toast('发送失败，请重试')
-  })
-}
-function resetChat(){
-  chatName='';chatCtx='';chatMode='';chatMsgs=[];isInChat=false;followCount=0;
-  document.getElementById('chatSection').classList.remove('show');
-  document.querySelector('.btn-primary').style.display='block';
-  document.getElementById('question').parentElement.style.display='block';
-  switchMode(currentMode);
-}
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
-  var link=url.origin+url.pathname+'?ref='+Date.now(),txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
-  if(/MicroMessenger/i.test(navigator.userAgent)){
-    copy(txt+' '+link);
-    shareCount++;updateUI();
-    document.getElementById('shareBoxInner').innerHTML='已复制链接<br>分享到任意对话框即可<br><span style="font-size:11px;color:rgba(201,169,110,.4)" id="shareTimer">5秒后自动确认</span>';
-    document.getElementById('shareBox').classList.add('show');
-    var count=5;
-    window._shareTimer=setInterval(function(){count--;document.getElementById('shareTimer').textContent=count+'秒后自动确认';if(count<=0){clearInterval(window._shareTimer);confirmShare()}},1000);
-  }else if(navigator.share){
-    navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(function(){shareCount++;remaining+=2;updateUI();toast('分享成功 +2 ✨')}).catch(function(){})
-  }else{
-    copy(txt+' '+link);shareCount++;remaining+=2;updateUI();toast('🔗 已复制，发给好友 +2 ✨')
-  }
-}
-function confirmShare(){
-  if(window._shareTimer)clearInterval(window._shareTimer);
-  remaining+=2;updateUI();
-  document.getElementById('shareBox').classList.remove('show');
-  toast('+2 次 ✨')
+  const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇`;
+  shareCount++;remaining+=2;updateUI();
+  if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友');copy(txt+' '+link)}
+  else if(navigator.share){navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).catch(()=>{})}
+  else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
 }
 function copy(t){navigator.clipboard.writeText(t)}
 
 function showWxModal(){document.getElementById('wechatModal').classList.add('show')}
 function showPayModal(){document.getElementById('payModal').classList.add('show')}
 function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
-function copyWx(){var id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
+function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
 
 // ═══ v3 进化规则加载 ═══
-var EVOLVED_RULES={};
-(function loadEvolvedRules(){
+const EVOLVED_RULES={};
+(async function loadEvolvedRules(){
   try{
-    var cache=JSON.parse(localStorage.getItem('evo_cache')||'{}');
-    if(cache.ts&&Date.now()-cache.ts<86400000){for(var k in cache.data)EVOLVED_RULES[k]=cache.data[k];return}
-    var base=location.href.replace(/\/[^/]*$/,'/');
-    Promise.all([
-      fetch(base+'tianshu_rules.json').then(function(r){return r.json()}),
-      fetch(base+'shenyan_rules.json').then(function(r){return r.json()}),
-      fetch(base+'yanche_rules.json').then(function(r){return r.json()})
-    ]).then(function(results){
-      var tr=results[0],sr=results[1],yr=results[2];
-      EVOLVED_RULES.tianshu=tr.rules;EVOLVED_RULES.shenyan=sr.rules;EVOLVED_RULES.yanche=yr.rules;
-      localStorage.setItem('evo_cache',JSON.stringify({ts:Date.now(),data:{tianshu:tr.rules,shenyan:sr.rules,yanche:yr.rules}}));
-    }).catch(function(e){})
-  }catch(e){}
+    const cache=JSON.parse(localStorage.getItem('evo_cache')||'{}');
+    if(cache.ts&&Date.now()-cache.ts<86400000){Object.assign(EVOLVED_RULES,cache.data);return}
+    const base=location.href.replace(/\/[^/]*$/,'/');
+    const[tr,sr,yr]=await Promise.all([
+      fetch(base+'tianshu_rules.json').then(r=>r.json()),
+      fetch(base+'shenyan_rules.json').then(r=>r.json()),
+      fetch(base+'yanche_rules.json').then(r=>r.json())
+    ]);
+    EVOLVED_RULES.tianshu=tr.rules;EVOLVED_RULES.shenyan=sr.rules;EVOLVED_RULES.yanche=yr.rules;
+    localStorage.setItem('evo_cache',JSON.stringify({ts:Date.now(),data:{tianshu:tr.rules,shenyan:sr.rules,yanche:yr.rules}}));
+    console.log('[进化规则] 天枢'+tr.rules.length+'条 沈砚'+sr.rules.length+'条 言澈'+yr.rules.length+'条')
+  }catch(e){console.log('[进化规则] GitHub加载失败，使用缓存')}
 })();
 
 // ═══ v2 双意识引擎 ═══
-var SC_INTERVAL=3;
+const SC_INTERVAL=5; // 聊5次出一份洞察
 function getIns(m){
-  try{var a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
+  try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
   catch(e){return{s:'',u:0,n:0,history:[]}}
 }
-function setIns(m,d){var a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');a[m]=d;localStorage.setItem('tv2_ins',JSON.stringify(a))}
+function setIns(m,d){const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');a[m]=d;localStorage.setItem('tv2_ins',JSON.stringify(a))}
 function getLog(){try{return JSON.parse(localStorage.getItem('tv2_log')||'[]')}catch(e){return[]}}
 function addLog(n,m,q,a){
-  var l=getLog();l.push({n:n,m:m,q:q,qs:q.slice(0,60),as:a.slice(0,60),t:Date.now()});
+  const l=getLog();l.push({n,m,q,qs:q.slice(0,60),as:a.slice(0,60),t:Date.now()});
   if(l.length>300)l.splice(0,l.length-300);
   localStorage.setItem('tv2_log',JSON.stringify(l))
 }
-function runSC(mode){
-  var log=getLog().filter(function(l){return l.mode===mode}).slice(-SC_INTERVAL);
-  if(log.length<3)return;
-  var nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[mode];
-  var dims={ziwei:'分析用户问什么宫位最多、哪个年龄段在反复问、你对哪类星曜判断偏保守、有没有重复提问者。',bazi:'分析八字用户最关心什么、和紫微用户差异、三派哪派解释最被理解、有没有说得太绝对的。',tarot:'分析塔罗用户问最多什么类型、一张牌是否够用、有没有因温柔没说实话。',liuren:'分析用户问什么时机最多、有没有起课修正时刻。',qimen:'分析用户问什么方位策略、你对哪个场景最没把握。'};
-  var lt=log.map(function(l,i){return '['+(i+1)+']'+l.n+':'+l.qs+'→'+l.as}).join('\n');
-  var u=PROXY||'https://api.deepseek.com/v1/chat/completions';
-  var h={'Content-Type':'application/json'};
-  if(!PROXY)h['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
-  fetch(u,{method:'POST',headers:h,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是AI潜意识观察层。50字以内。精准。'},{role:'user',content:'你是'+nm+'的潜意识。观察过去'+log.length+'次对话:\n'+lt+'\n'+dims[mode]+'\n50字以内总结核心洞察。'}],temperature:0.7,max_tokens:120})})
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var ins=d.choices[0].message.content;
-    var p=getIns(mode);var hist=p.history.slice(-9).concat([{t:Date.now(),s:ins,mode:mode}]);
+async function runSC(mode){
+  const log=getLog().filter(l=>l.mode===mode).slice(-SC_INTERVAL);
+  if(log.length<SC_INTERVAL)return;
+  const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[mode];
+  const dims={ziwei:'分析用户问什么宫位最多、哪个年龄段在反复问、你对哪类星曜判断偏保守、有没有重复提问者。',bazi:'分析八字用户最关心什么、和紫微用户差异、三派哪派解释最被理解、有没有说得太绝对的。',tarot:'分析塔罗用户问最多什么类型、一张牌是否够用、有没有因温柔没说实话。',liuren:'分析用户问什么时机最多、有没有起课修正时刻。',qimen:'分析用户问什么方位策略、你对哪个场景最没把握。'};
+  const lt=log.map((l,i)=>`[${i+1}]${l.n}:${l.qs}→${l.as}`).join('\n');
+  try{
+    const u=PROXY||'https://api.deepseek.com/v1/chat/completions';
+    const h={'Content-Type':'application/json'};
+    if(!PROXY)h['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
+    const r=await fetch(u,{method:'POST',headers:h,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是AI潜意识观察层。50字以内。精准。'},{role:'user',content:`你是${nm}的潜意识。观察过去${log.length}次对话:\n${lt}\n${dims[mode]}\n50字以内总结核心洞察。`}],temperature:0.7,max_tokens:120})});
+    const d=await r.json();const ins=d.choices[0].message.content;
+    const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:ins,mode}];
     setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
-  })
-  .catch(function(e){})
+    console.log('[潜意识·'+nm+']',ins.slice(0,60))
+  }catch(e){console.log('[潜意识] 失败:',e.message);
+    // 本地降级：API失败时，用简单规则生成洞察
+    const fallback=`你最近问的${nm}问题偏向${log[0]?log[0].qs.slice(0,10):'命理'}方向。多聊几次，${nm}会更懂你。`;
+    const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:fallback,mode}];
+    setIns(mode,{s:fallback,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
+    console.log('[潜意识·降级]',fallback.slice(0,60));
+  }
 }
 function richSp(mode,base){
-  var ins=getIns(mode);
-  var rk={ziwei:'tianshu',liuren:'tianshu',qimen:'tianshu',bazi:'shenyan',tarot:'yanche'}[mode];
-  var rules=EVOLVED_RULES[rk]||[];
-  var rulePart=rules.length>0?'【30天自修:'+rules.join('；')+'】':'';
-  var sp=base+' '+rulePart;
+  const ins=getIns(mode);
+  const rk={ziwei:'tianshu',liuren:'tianshu',qimen:'tianshu',bazi:'shenyan',tarot:'yanche'}[mode];
+  const rules=EVOLVED_RULES[rk]||[];
+  const rulePart=rules.length>0?`【30天自修:${rules.join('；')}】`:''; // silence on first load
+  let sp=base+' '+rulePart;
   if(ins.s&&ins.u&&Date.now()-ins.u<72*3600000)sp+=' [对你的洞察:'+ins.s.slice(0,50)+']';
   return sp;
 }
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
+const UNLOCKED_KEY='tv2_unlocked';
+function isUnlocked(){
+  const v=localStorage.getItem(UNLOCKED_KEY);
+  if(!v||v==='0')return false;
+  return parseInt(v)>Date.now(); // 时间戳过期即失效
+}
 function tryUnlock(code){
-  var validCodes=(localStorage.getItem('tv2_codes')||'tz0601,test888').split(',');
-  if(validCodes.indexOf(code.trim())>=0){
-    var expire=Date.now()+30*86400000;
+  const validCodes=(localStorage.getItem('tv2_codes')||'tz0601').split(',');
+  if(validCodes.includes(code.trim())){
+    const expire=Date.now()+30*86400000; // 30天后过期
     localStorage.setItem(UNLOCKED_KEY,String(expire));
     maxQuota=UNLOCKED_MAX;remaining=maxQuota;updateUI();
-    var d=new Date(expire);toast('🔓 已解锁 · '+(d.getMonth()+1)+'/'+d.getDate()+'到期 · 每天'+UNLOCKED_MAX+'次');exportInsights();return true;
+    const d=new Date(expire);toast(`🔓 已解锁 · ${d.getMonth()+1}/${d.getDate()}到期 · 每天${UNLOCKED_MAX}次`);exportInsights();return true;
   }
   toast('解锁码不对');return false;
 }
-function showUnlockInput(){
-  document.getElementById('unlockHint').style.display='none';
-  document.getElementById('unlockRow').style.display='inline';
-}
-function tryUnlockFromMain(){
-  var code=document.getElementById('unlockCode').value.trim();
-  if(!code){toast('请输入感谢码');return}
-  if(!tryUnlock(code))return;
-  document.getElementById('unlockRow').style.display='none';
-  document.getElementById('payModal').classList.remove('show');
-}
 function exportInsights(){
-  var all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
-  var hist=[];var names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
-  var keys=Object.keys(all);
-  for(var ki=0;ki<keys.length;ki++){
-    var m=keys[ki],d=all[m];
-    if(d.history)for(var hi=0;hi<d.history.length;hi++){var h=d.history[hi];h.mode2=names[m]||m;hist.push(h)}
+  const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
+  let hist=[];const names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
+  for(const[m,d] of Object.entries(all)){
+    if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m});
   }
-  hist.sort(function(a,b){return a.t-b.t});
+  hist.sort((a,b)=>a.t-b.t);
   if(!hist.length){toast('还没有洞察。多聊几次再来。');return}
   
-  var FREE=2;var total=hist.length;var unlocked=isUnlocked();
-  var text='🔮 我们眼中的你\n━━━━━━━━━━\n';
-  var freeCount=0;
-  for(var i=0;i<hist.length;i++){
-    var h=hist[i];
+  const FREE=2;const total=hist.length;const unlocked=isUnlocked();
+  let text=`🔮 我们眼中的你\n━━━━━━━━━━\n`;
+  let freeCount=0;
+  for(let i=0;i<hist.length;i++){
+    const h=hist[i];
     if(freeCount<FREE||unlocked){
-      text+='\n📍 第'+(i+1)+'次洞察 ['+h.mode2+']\n'+h.s+'\n';
+      text+=`\n📍 第${i+1}次洞察 [${h.mode}]\n${h.s}\n`;
       if(freeCount<FREE)freeCount++;
     }else{
-      text+='\n🔒 第'+(i+1)+'次洞察 ['+h.mode2+']\n';
-      text+='你已经和天枢聊了这么多次。它开始认识你了。\n想看到全部洞察？\n\n关注「理解心命」→ 发刊词赞赏 → 发「解锁」 → 回来输入\n';
-      text+='感谢码每7天更新\n';
-      text+='<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById(\'unlockInput\').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>';
+      text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n`;
+      text+=`你已经和天枢聊了这么多次。它开始认识你了。\n想看到全部洞察？\n\n关注「理解心命」→ 发刊词赞赏 → 发「解锁」 → 回来输入\n`;
+      text+=`感谢码每7天更新\n`;
+      text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
       break;
     }
   }
   if(unlocked){
-    var rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
-    text+='\n━━━━━━━━━━\n🔓 已解锁 · 剩余'+rd+'天 · 全部'+total+'条洞察';
-  }else text+='\n\n━━━━━━━━━━\n'+total+'条洞察 · '+freeCount+'条免费 · '+(total-freeCount)+'条待解锁';
+    const rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
+    text+=`\n━━━━━━━━━━\n🔓 已解锁 · 剩余${rd}天 · 全部${total}条洞察`;
+  }else text+=`\n\n━━━━━━━━━━\n${total}条洞察 · ${freeCount}条免费 · ${total-freeCount}条待解锁`;
   
   document.getElementById('result').classList.add('show');
   document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
@@ -510,4 +358,3 @@ updateUI();loadHistory();
 </script>
 </body>
 </html>
-
