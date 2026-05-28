@@ -130,6 +130,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
     <button class="btn btn-chat" onclick="askFollowUp()">发送</button>
   </div>
   <button class="btn btn-reset" onclick="resetChat()">新话题</button>
+  <button class="btn btn-reset" style="background:rgba(220,47,2,0.08);border-color:rgba(220,47,2,0.2);color:rgba(232,93,4,.6);margin-top:4px" onclick="share()">分享好友 +2次</button>
 </div>
 <div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
@@ -177,7 +178,7 @@ function isUnlocked(){
   return parseInt(v)>Date.now();
 }
 var today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
-var chatName='',chatCtx='',chatMode='',chatMsgs=[],isInChat=false;
+var chatName='',chatCtx='',chatMode='',chatMsgs=[],isInChat=false,followCount=0;
 var now2=new Date().toDateString();
 if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
@@ -276,7 +277,7 @@ function ask(){
     saveHistory(name,currentMode,q,a);loadHistory();
     addLog(name,currentMode,q,a);
     // 进入连续对话
-    chatName=name;chatCtx=prompt;chatMode=currentMode;chatMsgs=[{q:q,a:a}];isInChat=true;
+    chatName=name;chatCtx=prompt;chatMode=currentMode;chatMsgs=[{q:q,a:a}];isInChat=true;followCount=0;
     showChat(q,a);
     var totalForMode=getLog().filter(function(l){return l.mode===currentMode}).length;
     if(totalForMode%SC_INTERVAL===0)runSC(currentMode);
@@ -301,7 +302,9 @@ function showChat(q,a){
   cm.scrollTop=cm.scrollHeight;
 }
 function askFollowUp(){
+  if(followCount>=5&&!isUnlocked()){showPayModal();return}
   var q=document.getElementById('followQ').value.trim();if(!q){toast('请写下你想问的');return}
+  followCount++;
   var loading={ziwei:'天枢在思考',bazi:'沈砚在思考',tarot:'言澈在洗牌',liuren:'天枢在起课',qimen:'天枢在排盘'};
   // 追加用户消息
   var cm=document.getElementById('chatMsgs');
@@ -347,7 +350,7 @@ function askFollowUp(){
   })
 }
 function resetChat(){
-  chatName='';chatCtx='';chatMode='';chatMsgs=[];isInChat=false;
+  chatName='';chatCtx='';chatMode='';chatMsgs=[];isInChat=false;followCount=0;
   document.getElementById('chatSection').classList.remove('show');
   document.querySelector('.btn-primary').style.display='block';
   document.getElementById('question').parentElement.style.display='block';
