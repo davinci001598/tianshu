@@ -66,6 +66,20 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 .pay-card p{font-size:13px;color:rgba(232,213,183,.7);line-height:1.8;margin-bottom:18px}
 .pay-card .btn-pay{background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;padding:12px 32px;border-radius:10px;font-size:14px;letter-spacing:1px;cursor:pointer;border:none;width:100%;margin-bottom:10px}
 .pay-card .btn-later{background:none;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:8px 24px;border-radius:8px;font-size:12px;cursor:pointer}
+/* 连续对话 */
+.chat-section{display:none;margin-top:18px;animation:slideUp 0.4s ease-out}
+.chat-section.show{display:block}
+.chat-msgs{background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;max-height:60vh;overflow-y:auto;border:1px solid rgba(255,255,255,0.06)}
+.chat-msg{margin-bottom:14px;font-size:13px;line-height:1.7}
+.chat-msg.user{text-align:right;color:rgba(232,213,183,.6)}
+.chat-msg.user span{display:inline-block;background:rgba(201,169,110,.15);padding:8px 14px;border-radius:14px 14px 4px 14px;max-width:80%;text-align:left}
+.chat-msg.ai{color:rgba(232,213,183,.9)}
+.chat-msg.ai span{display:inline-block;padding:8px 0;max-width:100%}
+.chat-input-row{display:flex;gap:8px;margin-bottom:8px}
+.chat-input-row textarea{flex:1;height:44px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:#e8d5b7;font-size:13px;resize:none;outline:none;font-family:inherit}
+.chat-input-row textarea:focus{border-color:rgba(201,169,110,.4)}
+.btn-chat{width:auto;padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,#c9a96e,#8b7355);color:#fff;font-size:13px;letter-spacing:1px;border:none;cursor:pointer;white-space:nowrap}
+.btn-reset{width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,.3);font-size:11px;cursor:pointer;margin-top:8px}
 </style>
 </head>
 <body>
@@ -109,6 +123,14 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
+<div class="chat-section" id="chatSection">
+  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-input-row">
+    <textarea id="followQ" placeholder="继续问..." rows="2"></textarea>
+    <button class="btn btn-chat" onclick="askFollowUp()">发送</button>
+  </div>
+  <button class="btn btn-reset" onclick="resetChat()">新话题</button>
+</div>
 <div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
@@ -155,6 +177,7 @@ function isUnlocked(){
   return parseInt(v)>Date.now();
 }
 var today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
+var chatName='',chatCtx='',chatMode='',chatMsgs=[],isInChat=false;
 var now2=new Date().toDateString();
 if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
@@ -249,14 +272,88 @@ function ask(){
   .then(function(d){
     var a=d.choices[0].message.content;
     document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
-    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
+    if(remaining<=1&&!isUnlocked())document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
     saveHistory(name,currentMode,q,a);loadHistory();
     addLog(name,currentMode,q,a);
+    // 进入连续对话
+    chatName=name;chatCtx=prompt;chatMode=currentMode;chatMsgs=[{q:q,a:a}];isInChat=true;
+    showChat(q,a);
     var totalForMode=getLog().filter(function(l){return l.mode===currentMode}).length;
     if(totalForMode%SC_INTERVAL===0)runSC(currentMode);
   })
   .catch(function(e){document.getElementById('resultText').innerHTML='此刻无法感应，稍后再试';remaining++;updateUI()})
 }
+
+// ═══ 连续对话 ═══
+function showChat(q,a){
+  // 隐藏主表单，显示聊天区
+  document.getElementById('form-birthday').style.display='none';
+  document.getElementById('form-time').style.display='none';
+  document.getElementById('form-tarot').style.display='none';
+  document.getElementById('question').parentElement.style.display='none';
+  document.querySelector('.btn-primary').style.display='none';
+  document.getElementById('shareBox').classList.remove('show');
+  // 显示聊天
+  var cs=document.getElementById('chatSection');cs.classList.add('show');
+  var cm=document.getElementById('chatMsgs');
+  cm.innerHTML='<div class="chat-msg user"><span>'+escHtml(q)+'</span></div><div class="chat-msg ai"><span>'+a.replace(/\n/g,'<br>')+'</span></div>';
+  document.getElementById('followQ').value='';
+  cm.scrollTop=cm.scrollHeight;
+}
+function askFollowUp(){
+  var q=document.getElementById('followQ').value.trim();if(!q){toast('请写下你想问的');return}
+  var loading={ziwei:'天枢在思考',bazi:'沈砚在思考',tarot:'言澈在洗牌',liuren:'天枢在起课',qimen:'天枢在排盘'};
+  // 追加用户消息
+  var cm=document.getElementById('chatMsgs');
+  cm.innerHTML+='<div class="chat-msg user"><span>'+escHtml(q)+'</span></div><div class="chat-msg ai"><span>'+loading[chatMode]+'...</span></div>';
+  cm.scrollTop=cm.scrollHeight;
+  document.getElementById('followQ').value='';
+  // 锁定输入
+  var btn=document.querySelector('.btn-chat');btn.disabled=true;btn.style.opacity='.5';
+  document.getElementById('followQ').disabled=true;
+  
+  var hist=getHistory().filter(function(h){return h.name===chatName});
+  var histCtx=hist.length>1?'你之前说过:'+hist.slice(1).map(function(h){return h.q+'→'+h.a}).join('；')+','+hist[0].q+'→'+hist[0].a:hist.length===1?'上次'+hist[0].q+'→'+hist[0].a:'';
+  var sp=richSp(chatMode,'继续正在进行的对话。称呼名字。认真回答。100-200字。'+histCtx);
+  var apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
+  var headers={'Content-Type':'application/json'};
+  if(!PROXY)headers['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
+  
+  // 构建完整对话上下文
+  var msgs=[{role:'system',content:sp}];
+  for(var i=0;i<chatMsgs.length;i++){msgs.push({role:'user',content:chatMsgs[i].q});msgs.push({role:'assistant',content:chatMsgs[i].a})}
+  msgs.push({role:'user',content:q});
+  
+  fetch(apiUrl,{method:'POST',headers:headers,body:JSON.stringify({model:'deepseek-chat',messages:msgs,temperature:0.9,max_tokens:400})})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var a=d.choices[0].message.content;
+    chatMsgs.push({q:q,a:a});
+    saveHistory(chatName,chatMode,q,a);loadHistory();
+    addLog(chatName,chatMode,q,a);
+    // 替换加载消息
+    var msgs=document.getElementById('chatMsgs').querySelectorAll('.chat-msg.ai');
+    var last=msgs[msgs.length-1].querySelector('span');
+    last.innerHTML=a.replace(/\n/g,'<br>');
+    cm.scrollTop=cm.scrollHeight;
+    btn.disabled=false;btn.style.opacity='1';
+    document.getElementById('followQ').disabled=false;
+    document.getElementById('followQ').focus();
+  })
+  .catch(function(e){
+    btn.disabled=false;btn.style.opacity='1';
+    document.getElementById('followQ').disabled=false;
+    toast('发送失败，请重试')
+  })
+}
+function resetChat(){
+  chatName='';chatCtx='';chatMode='';chatMsgs=[];isInChat=false;
+  document.getElementById('chatSection').classList.remove('show');
+  document.querySelector('.btn-primary').style.display='block';
+  document.getElementById('question').parentElement.style.display='block';
+  switchMode(currentMode);
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
