@@ -119,7 +119,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="form-group"><div class="form-label" id="questionLabel">你想问的</div><textarea id="question" placeholder="可以是事业、感情、抉择..."></textarea></div>
 <button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
-<div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
+<div class="share-area" id="shareBox"><div id="shareBoxInner"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div></div>
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
@@ -361,15 +361,21 @@ function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   var link=url.origin+url.pathname+'?ref='+Date.now(),txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
-  shareCount++;updateUI();
   if(/MicroMessenger/i.test(navigator.userAgent)){
-    copy(txt+' '+link);toast('📱 已复制，点右上角分享给朋友');
-    remaining+=2;updateUI();
+    copy(txt+' '+link);
+    shareCount++;updateUI();
+    document.getElementById('shareBoxInner').innerHTML='已复制链接<br>分享到任意对话框后<br><button class="btn btn-share" onclick="confirmShare()" style="margin-top:8px;font-size:12px;padding:8px 20px">✓ 已分享，点此确认</button>';
+    document.getElementById('shareBox').classList.add('show');
   }else if(navigator.share){
-    navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(function(){remaining+=2;updateUI();toast('分享成功 +2 ✨')}).catch(function(){shareCount--;updateUI()})
+    navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(function(){shareCount++;remaining+=2;updateUI();toast('分享成功 +2 ✨')}).catch(function(){})
   }else{
-    copy(txt+' '+link);remaining+=2;updateUI();toast('🔗 已复制，发给好友 +2 ✨')
+    copy(txt+' '+link);shareCount++;remaining+=2;updateUI();toast('🔗 已复制，发给好友 +2 ✨')
   }
+}
+function confirmShare(){
+  remaining+=2;updateUI();
+  document.getElementById('shareBox').classList.remove('show');
+  toast('+2 次 ✨')
 }
 function copy(t){navigator.clipboard.writeText(t)}
 
