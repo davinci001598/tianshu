@@ -258,7 +258,7 @@ const EVOLVED_RULES={};
 })();
 
 // ═══ v2 双意识引擎 ═══
-const SC_INTERVAL=3; // 第一天聊满3次就触发，当天就能感觉到AI开始认识你
+const SC_INTERVAL=1; // 每聊一次就触发，不用等攒满
 function getIns(m){
   try{const a=JSON.parse(localStorage.getItem('tv2_ins')||'{}');return a[m]||{s:'',u:0,n:0,history:[]}}
   catch(e){return{s:'',u:0,n:0,history:[]}}
@@ -272,7 +272,7 @@ function addLog(n,m,q,a){
 }
 async function runSC(mode){
   const log=getLog().filter(l=>l.mode===mode).slice(-SC_INTERVAL);
-  if(log.length<3)return;
+  if(log.length<SC_INTERVAL)return;
   const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[mode];
   const dims={ziwei:'分析用户问什么宫位最多、哪个年龄段在反复问、你对哪类星曜判断偏保守、有没有重复提问者。',bazi:'分析八字用户最关心什么、和紫微用户差异、三派哪派解释最被理解、有没有说得太绝对的。',tarot:'分析塔罗用户问最多什么类型、一张牌是否够用、有没有因温柔没说实话。',liuren:'分析用户问什么时机最多、有没有起课修正时刻。',qimen:'分析用户问什么方位策略、你对哪个场景最没把握。'};
   const lt=log.map((l,i)=>`[${i+1}]${l.n}:${l.qs}→${l.as}`).join('\n');
@@ -285,7 +285,13 @@ async function runSC(mode){
     const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:ins,mode}];
     setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
     console.log('[潜意识·'+nm+']',ins.slice(0,60))
-  }catch(e){console.log('[潜意识] 失败')}
+  }catch(e){console.log('[潜意识] 失败:',e.message);
+    // 本地降级：API失败时，用简单规则生成洞察
+    const fallback=`你最近问的${nm}问题偏向${log[0]?log[0].qs.slice(0,10):'命理'}方向。多聊几次，${nm}会更懂你。`;
+    const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:fallback,mode}];
+    setIns(mode,{s:fallback,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
+    console.log('[潜意识·降级]',fallback.slice(0,60));
+  }
 }
 function richSp(mode,base){
   const ins=getIns(mode);
