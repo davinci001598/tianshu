@@ -298,10 +298,15 @@ function share(){
   
   copy(txt+' '+link);
   if(/MicroMessenger/i.test(navigator.userAgent)){
+    // 微信：WeixinJSBridge 检测三点分享
     toast('已复制 · 点右上角···发给朋友');
-  }else{
-    toast('已复制链接，发给好友即可');
+    return;
   }
+  
+  // 桌面端 / 其他：无法验证，直接给
+  shareCount++;remaining+=2;updateUI();
+  document.getElementById('shareBox').classList.remove('show');
+  toast('已复制链接 · +2次 ✨');
 }
 function copy(t){navigator.clipboard.writeText(t)}
 
