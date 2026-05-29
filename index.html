@@ -107,13 +107,6 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
 <div style="text-align:center;margin-top:6px"><button style="background:none;border:1px dashed rgba(255,255,255,.15);color:rgba(255,255,255,.2);padding:4px 12px;border-radius:4px;font-size:9px;cursor:pointer" onclick="toast('JS正常 · 剩余'+remaining+'次 · 模式:'+currentMode)">测试按钮</button></div>
 <div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
-<div class="share-area" id="shareConfirm" style="display:none">
-  <p style="font-size:12px;color:rgba(232,213,183,.6);margin-bottom:8px" id="shareMsg">分享给微信好友，各得2次</p>
-  <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-    <button class="btn" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 20px;border-radius:8px;font-size:13px;cursor:pointer;width:auto" onclick="confirmShare()">✅ 我已分享</button>
-    <button class="btn" style="background:rgba(255,255,255,.04);color:rgba(232,213,183,.3);border:1px solid rgba(255,255,255,.08);padding:10px 16px;border-radius:8px;font-size:12px;cursor:pointer;width:auto" onclick="cancelShare()">取消</button>
-  </div>
-</div>
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div>
@@ -275,42 +268,38 @@ async function ask(){
   }catch(e){document.getElementById('resultText').innerHTML=`<div style="font-size:14px;color:#c9a96e">⚠️ ${e.message||'网络或API错误'}</div><br><span style="font-size:11px;color:rgba(232,213,183,.3)">检查API Key是否正确、余额是否充足</span>`;remaining++;updateUI()}
 }
 
-let shareLink='';
+let sharePending=0;
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && sharePending && Date.now()-sharePending>2000){
+    shareCount++;remaining+=2;updateUI();
+    toast('欢迎回来 +2次 ✨');
+    sharePending=0;
+  }
+});
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
-  shareLink=url.origin+url.pathname+'?ref='+Date.now();
+  const ref=Date.now(),link=url.origin+url.pathname+'?ref='+ref;
   const txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
-  document.getElementById('shareMsg').textContent='发给微信好友，各得2次';
-  document.getElementById('shareBox').style.display='none';
-  document.getElementById('shareConfirm').style.display='block';
   
   if(navigator.share){
-    navigator.share({title:'AI在慢慢认识我',text:txt,url:shareLink}).then(()=>{
-      // 原生分享成功，自动确认
-      confirmShare();
+    navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(()=>{
+      shareCount++;remaining+=2;updateUI();
+      toast('已分享 +2次 ✨');
     }).catch(()=>{
-      // 取消或失败，复制备用
-      copy(txt+' '+shareLink);
-      document.getElementById('shareMsg').textContent='已复制链接 · 粘贴发给好友后点确认';
+      copy(txt+' '+link);
+      toast('已复制链接，分享后朋友打开各得2次');
     });
     return;
   }
-  copy(txt+' '+shareLink);
+  
+  copy(txt+' '+link);
   if(/MicroMessenger/i.test(navigator.userAgent)){
-    document.getElementById('shareMsg').textContent='已复制 · 点右上角 ··· 发给朋友后回来点确认';
+    sharePending=Date.now();
+    document.getElementById('shareBox').innerHTML='<p style="font-size:11px;color:rgba(232,213,183,.5)">已复制 · 点右上角 <b>···</b> 发给朋友<br><span style="font-size:9px;color:rgba(232,213,183,.2)">分享完回来自动获得2次</span></p>';
+    setTimeout(()=>{if(sharePending)document.getElementById('shareBox').classList.remove('show')},8000);
   }else{
-    document.getElementById('shareMsg').textContent='已复制链接 · 发给好友后点确认';
+    toast('已复制链接，发给好友即可 ✨');
   }
-}
-function confirmShare(){
-  shareCount++;remaining+=2;updateUI();
-  document.getElementById('shareConfirm').style.display='none';
-  document.getElementById('shareBox').style.display='none';
-  toast('+2次 ✨');
-}
-function cancelShare(){
-  document.getElementById('shareConfirm').style.display='none';
-  document.getElementById('shareBox').style.display='block';
 }
 function copy(t){navigator.clipboard.writeText(t)}
 
