@@ -276,20 +276,20 @@ function share(){
   if(navigator.share){
     navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(()=>{
       shareCount++;remaining+=2;updateUI();
-      toast('已分享 +2次 ✨');
+      document.getElementById('shareBox').classList.remove('show');
+      toast('分享成功 +2次 ✨');
     }).catch(()=>{
       copy(txt+' '+link);
-      toast('已复制链接，发给好友即可');
+      toast('已复制，分享后获得次数');
     });
     return;
   }
   
   copy(txt+' '+link);
-  shareCount++;remaining+=2;updateUI();
   if(/MicroMessenger/i.test(navigator.userAgent)){
-    toast('已复制 · 点右上角···发给朋友 +2次 ✨');
+    toast('已复制 · 点右上角···发给朋友');
   }else{
-    toast('已复制链接 · +2次 ✨');
+    toast('已复制链接，发给好友即可');
   }
 }
 function copy(t){navigator.clipboard.writeText(t)}
