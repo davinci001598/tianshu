@@ -197,7 +197,24 @@ function addBonus(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
 
 const url=new URL(window.location.href);
-if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
+const visitorRef=url.searchParams.get('ref');
+if(visitorRef){
+  remaining=Math.min(remaining+2,maxQuota+20);
+  toast('好友已帮你解锁 2 次 ✨');
+  window.history.replaceState({},'',url.pathname);
+  // 记录被打开的ref，分享者下次访问时可检测
+  const visited=JSON.parse(localStorage.getItem('tv2_visited_refs')||'[]');
+  visited.push(visitorRef);
+  localStorage.setItem('tv2_visited_refs',JSON.stringify(visited.slice(-20)));
+}
+// 检测自己的分享是否被朋友打开
+const myPendingRef=localStorage.getItem('tv2_pending_ref');
+if(myPendingRef&&!isUnlocked()){
+  const visited=JSON.parse(localStorage.getItem('tv2_visited_refs')||'[]');
+  if(visited.includes(myPendingRef)){
+    setTimeout(doShareUnlock,100); // DOM就绪后再解锁
+  }
+}
 const modeParam=url.searchParams.get('mode');
 if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){switchMode(modeParam)}
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
@@ -285,25 +302,30 @@ function share(){
   
   if(navigator.share){
     navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(()=>{
-      doShareUnlock();
+      // 原生分享成功 → 存储ref等朋友打开
+      localStorage.setItem('tv2_pending_ref',ref);
+      toast('已分享！朋友打开链接后自动解锁7天畅聊 ✨');
     }).catch(()=>{
       safeCopy(txt+' '+link);
-      toast('已复制链接，发给好友后回来点分享');
+      localStorage.setItem('tv2_pending_ref',ref);
+      toast('已复制 · 朋友打开后自动解锁');
     });
     return;
   }
   
   safeCopy(txt+' '+link);
-  doShareUnlock();
+  localStorage.setItem('tv2_pending_ref',ref);
+  toast('已复制 · 发给好友，好友打开后自动解锁7天畅聊');
   }catch(e){toast('分享出错，刷新重试');console.error(e)}
 }
 function doShareUnlock(){
-  const expire=Date.now()+7*86400000; // 7天
+  const expire=Date.now()+7*86400000;
   localStorage.setItem(UNLOCKED_KEY,String(expire));
+  localStorage.removeItem('tv2_pending_ref');
   maxQuota=UNLOCKED_MAX;remaining=maxQuota;
   const d=new Date(expire);
   updateUI();exportInsights();
-  toast(`📤 分享成功 · 7天畅聊 · ${d.getMonth()+1}/${d.getDate()}到期 ✨`);
+  toast(`🔓 好友已打开 · 7天畅聊 · ${d.getMonth()+1}/${d.getDate()}到期 ✨`);
 }
 function safeCopy(t){
   try{
@@ -607,7 +629,7 @@ function exportInsights(){
     text+=`<div style="font-size:14px;color:#e8d5b7;line-height:2">${last.s}</div>\n`;
     text+=`</div>\n`;
     text+=`<div style="text-align:center;margin:16px 0;font-size:11px;color:rgba(232,213,183,.4)">这是天枢送你的第一次读心<br><br></div>\n`;
-    text+=`<button onclick="share()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">📤 分享好友 · 7天畅聊</button>\n`;
+    text+=`<button onclick="share()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">📤 分享好友 · 朋友打开即解锁</button>\n`;
     text+=`<button onclick="document.getElementById('payModal').classList.add('show');exportInsights()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(232,213,183,.5);padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🔓 解锁码</button>\n`;
     text+=`<div style="text-align:right;margin-top:16px"><a href="javascript:resetData()" style="color:rgba(255,255,255,.1);font-size:10px">重置</a></div>\n`;
     document.getElementById('result').classList.add('show');
