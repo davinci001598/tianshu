@@ -268,6 +268,17 @@ async function ask(){
   }catch(e){document.getElementById('resultText').innerHTML=`<div style="font-size:14px;color:#c9a96e">⚠️ ${e.message||'网络或API错误'}</div><br><span style="font-size:11px;color:rgba(232,213,183,.3)">检查API Key是否正确、余额是否充足</span>`;remaining++;updateUI()}
 }
 
+// 微信三点分享检测
+document.addEventListener('WeixinJSBridgeReady',function(){
+  WeixinJSBridge.on('menu:share:appmessage',function(){
+    if(shareCount<3){
+      shareCount++;remaining+=2;updateUI();
+      document.getElementById('shareBox').classList.remove('show');
+      toast('分享成功 +2次 ✨');
+    }
+  });
+});
+
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   const ref=Date.now(),link=url.origin+url.pathname+'?ref='+ref;
