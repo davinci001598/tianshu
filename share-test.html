@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>分享测试</title>
+<style>body{font-family:sans-serif;padding:20px;background:#1a1a2e;color:#e0e0e0;max-width:500px;margin:0 auto}
+button{padding:14px 28px;font-size:16px;cursor:pointer;background:#c9a96e;border:none;color:#1a1a2e;border-radius:8px}
+.card{background:rgba(255,255,255,.04);padding:16px;margin:12px 0;border-radius:10px;border:1px solid rgba(255,255,255,.08)}
+.green{color:#5f8;}.yellow{color:#fc0;}.red{color:#f55;}.dim{color:rgba(255,255,255,.3)}
+</style></head><body>
+<h2>分享逻辑测试</h2>
+
+<div class="card">
+  <div id="env"></div>
+</div>
+
+<div class="card">
+  <div>shareCount: <b id="sc">0</b></div>
+  <div>remaining: <b id="rm">3</b></div>
+  <div style="margin-top:12px"><button onclick="doShare()">分享好友（模拟）</button></div>
+  <div style="margin-top:8px"><button onclick="resetAll()" style="background:rgba(255,255,255,.1);color:#e0e0e0">重置</button></div>
+</div>
+
+<div class="card" id="log" style="max-height:300px;overflow-y:auto;font-size:13px"></div>
+
+<script>
+const ua=navigator.userAgent;
+const isWx=/MicroMessenger/i.test(ua);
+const hasShare=!!navigator.share;
+
+document.getElementById('env').innerHTML=`
+  <div class="${hasShare?'green':'red'}">navigator.share: ${hasShare?'✅ 支持':'❌ 不支持'}</div>
+  <div class="${isWx?'yellow':'dim'}">微信浏览器: ${isWx?'✅ 是':'否'}</div>
+  <div class="dim">路径: ${isWx?'WeixinJSBridge 三点检测':hasShare?'原生分享面板':'桌面端直接+2'}</div>
+`;
+
+let shareCount=0,remaining=3;
+function upUI(){
+  document.getElementById('sc').textContent=shareCount;
+  document.getElementById('rm').textContent=remaining;
+}
+
+function log(msg,color=''){
+  const el=document.getElementById('log');
+  const c=color||'dim';
+  el.innerHTML+=`<div class="${c}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+
+// 模拟 WeixinJSBridge
+if(isWx){
+  log('微信环境检测到，注册 WeixinJSBridge 监听','yellow');
+  function setupWxBridge(){
+    if(typeof WeixinJSBridge !== 'undefined'){
+      log('WeixinJSBridge 已就绪','green');
+      WeixinJSBridge.on('menu:share:appmessage',function(){
+        log('🔥 检测到三点分享！+2次','green');
+        if(shareCount<3){
+          shareCount++;remaining+=2;upUI();
+        }
+      });
+    }else{
+      document.addEventListener('WeixinJSBridgeReady',function(){
+        log('WeixinJSBridgeReady 事件触发','green');
+        WeixinJSBridge.on('menu:share:appmessage',function(){
+          log('🔥 检测到三点分享！+2次','green');
+          if(shareCount<3){
+            shareCount++;remaining+=2;upUI();
+          }
+        });
+      });
+      log('等待 WeixinJSBridgeReady...','yellow');
+    }
+  }
+  setupWxBridge();
+}
+
+function doShare(){
+  if(shareCount>=3){
+    log('今日分享次数已用完','red');
+    return;
+  }
+  
+  const txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
+  
+  if(isWx){
+    log('→ 微信路径：复制链接，等待三点分享','yellow');
+    log('   WeixinJSBridge 监听已注册，三点分享后自动+2','dim');
+    // 模拟三点分享触发（测试用）
+    setTimeout(()=>{
+      log('⏰ 3秒超时，模拟 WeixinJSBridge 触发','yellow');
+      if(typeof WeixinJSBridge !== 'undefined'){
+        // 手动触发事件模拟
+        log('  模拟 menu:share:appmessage 事件','yellow');
+        if(shareCount<3){shareCount++;remaining+=2;upUI();log('✅ +2次','green');}
+      }
+    },3000);
+    return;
+  }
+  
+  if(hasShare){
+    log('→ 原生分享路径','green');
+    navigator.share({title:'测试',text:txt,url:location.href}).then(()=>{
+      log('  .then() - 分享成功','green');
+      shareCount++;remaining+=2;upUI();
+      log('  ✅ +2次','green');
+    }).catch((e)=>{
+      log('  .catch() - '+(e.name||'取消')+'，但仍给次数','yellow');
+      shareCount++;remaining+=2;upUI();
+      log('  ✅ +2次','green');
+    });
+    return;
+  }
+  
+  // 桌面端
+  log('→ 桌面端路径：直接+2','green');
+  shareCount++;remaining+=2;upUI();
+  log('✅ +2次','green');
+}
+
+function resetAll(){
+  shareCount=0;remaining=3;upUI();
+  document.getElementById('log').innerHTML='';
+  log('🔄 已重置');
+}
+</script>
+</body></html>

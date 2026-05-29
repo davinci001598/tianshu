@@ -268,21 +268,42 @@ async function ask(){
   }catch(e){document.getElementById('resultText').innerHTML=`<div style="font-size:14px;color:#c9a96e">⚠️ ${e.message||'网络或API错误'}</div><br><span style="font-size:11px;color:rgba(232,213,183,.3)">检查API Key是否正确、余额是否充足</span>`;remaining++;updateUI()}
 }
 
-// 微信三点分享检测
-document.addEventListener('WeixinJSBridgeReady',function(){
-  WeixinJSBridge.on('menu:share:appmessage',function(){
-    if(shareCount<3){
-      shareCount++;remaining+=2;updateUI();
-      document.getElementById('shareBox').classList.remove('show');
-      toast('分享成功 +2次 ✨');
-    }
-  });
-});
+// 微信三点分享检测 + 兜底
+let wxBridgeFired=false;
+if(/MicroMessenger/i.test(navigator.userAgent)){
+  function wxSetup(){
+    WeixinJSBridge.on('menu:share:appmessage',function(){
+      if(shareCount<3&&!wxBridgeFired){
+        wxBridgeFired=true;
+        shareCount++;remaining+=2;updateUI();
+        document.getElementById('shareBox').classList.remove('show');
+        toast('分享成功 +2次 ✨');
+      }
+    });
+  }
+  if(typeof WeixinJSBridge!=='undefined') wxSetup();
+  else document.addEventListener('WeixinJSBridgeReady',wxSetup);
+}
 
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   const ref=Date.now(),link=url.origin+url.pathname+'?ref='+ref;
   const txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
+  
+  if(/MicroMessenger/i.test(navigator.userAgent)){
+    copy(txt+' '+link);
+    toast('已复制 · 点右上角···发给朋友');
+    // 兜底：5秒后 WeixinJSBridge 没触发就自动给
+    setTimeout(()=>{
+      if(!wxBridgeFired&&shareCount<3){
+        wxBridgeFired=true;
+        shareCount++;remaining+=2;updateUI();
+        document.getElementById('shareBox').classList.remove('show');
+        toast('已复制链接 · +2次 ✨');
+      }
+    },5000);
+    return;
+  }
   
   if(navigator.share){
     navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(()=>{
@@ -291,19 +312,14 @@ function share(){
       toast('分享成功 +2次 ✨');
     }).catch(()=>{
       copy(txt+' '+link);
-      toast('已复制，分享后获得次数');
+      shareCount++;remaining+=2;updateUI();
+      document.getElementById('shareBox').classList.remove('show');
+      toast('已复制链接 · +2次 ✨');
     });
     return;
   }
   
   copy(txt+' '+link);
-  if(/MicroMessenger/i.test(navigator.userAgent)){
-    // 微信：WeixinJSBridge 检测三点分享
-    toast('已复制 · 点右上角···发给朋友');
-    return;
-  }
-  
-  // 桌面端 / 其他：无法验证，直接给
   shareCount++;remaining+=2;updateUI();
   document.getElementById('shareBox').classList.remove('show');
   toast('已复制链接 · +2次 ✨');
