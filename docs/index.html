@@ -107,7 +107,6 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <div class="form-group"><div class="form-label" id="questionLabel">你想问的</div><textarea id="question" placeholder="可以是事业、感情、抉择..."></textarea></div>
 <button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
 <div style="text-align:center;margin-top:6px"><button style="background:none;border:1px dashed rgba(255,255,255,.15);color:rgba(255,255,255,.2);padding:4px 12px;border-radius:4px;font-size:9px;cursor:pointer" onclick="toast('JS正常 · 剩余'+remaining+'次 · 模式:'+currentMode)">测试按钮</button></div>
-<div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div>
@@ -150,11 +149,11 @@ const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
 const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30,UNLOCKED_KEY='tv2_unlocked',FREE_INSIGHT_KEY='tv2_free_insight',FOLLOWUP_KEY='tianshu_followup';
-let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX,followUpCount,freeInsightUsed;
+let today=localStorage.getItem('tianshu_date')||'',remaining,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX,followUpCount,freeInsightUsed;
 const now2=new Date().toDateString();
-if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;followUpCount=0;freeInsightUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false');localStorage.setItem(FOLLOWUP_KEY,'0');localStorage.setItem(FREE_INSIGHT_KEY,'false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0');bonusUsed=localStorage.getItem('tianshu_bonus')==='true';followUpCount=parseInt(localStorage.getItem(FOLLOWUP_KEY)||'0');freeInsightUsed=localStorage.getItem(FREE_INSIGHT_KEY)==='true'}
+if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;bonusUsed=false;followUpCount=0;freeInsightUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false');localStorage.setItem(FOLLOWUP_KEY,'0');localStorage.setItem(FREE_INSIGHT_KEY,'false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);bonusUsed=localStorage.getItem('tianshu_bonus')==='true';followUpCount=parseInt(localStorage.getItem(FOLLOWUP_KEY)||'0');freeInsightUsed=localStorage.getItem(FREE_INSIGHT_KEY)==='true'}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
-remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
+remaining=Math.min(remaining,maxQuota);
 
 function getHistory(){try{return JSON.parse(localStorage.getItem('tianshu_history')||'[]')}catch(e){return[]}}
 function saveHistory(name,mode,q,answer){const h=getHistory();h.unshift({name,mode,q,answer:answer.slice(0,80),time:new Date().toLocaleDateString()});if(h.length>20)h.length=20;localStorage.setItem('tianshu_history',JSON.stringify(h))}
@@ -174,12 +173,9 @@ function switchMode(m){
 
 function updateUI(){
   document.getElementById('qNum').textContent=remaining;
-  const shareExhausted=shareCount>=3;
-  document.getElementById('shareBox').classList.toggle('show',remaining<=0&&!shareExhausted);
-  document.getElementById('shareLeft').textContent=3-shareCount;
   document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
-  if(remaining<=0&&shareExhausted&&!isUnlocked())showPayModal();
-  // 剩1次 + 有洞察 + 还没用免费 → 高亮提示
+  if(remaining<=0&&!isUnlocked())document.getElementById('insightProgress').innerHTML='<span style="color:rgba(201,169,110,.5);cursor:pointer" onclick="exportInsights()">🔍 点这里 · 天枢眼中的你</span>';
+  // 剩1次 + 还没用免费 → 高亮
   if(remaining===1&&!freeInsightUsed){
     document.getElementById('qNum').style.color='#ffd700';
     document.getElementById('qNum').style.animation='pulse 1.5s infinite';
@@ -188,7 +184,6 @@ function updateUI(){
     document.getElementById('qNum').style.animation='';
   }
   localStorage.setItem('tianshu_remain',remaining);
-  localStorage.setItem('tianshu_share',shareCount);
   localStorage.setItem(FOLLOWUP_KEY,followUpCount);
   localStorage.setItem(FREE_INSIGHT_KEY,freeInsightUsed);
 }
@@ -285,27 +280,30 @@ async function ask(){
 
 function share(){
   try{
-  if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   const ref=Date.now(),link=url.origin+url.pathname+'?ref='+ref;
   const txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
   
   if(navigator.share){
     navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(()=>{
-      shareCount++;remaining+=2;updateUI();
-      document.getElementById('shareBox').classList.remove('show');
-      toast('分享成功 +2次 ✨');
+      doShareUnlock();
     }).catch(()=>{
       safeCopy(txt+' '+link);
-      toast('已复制，分享后朋友打开链接即得2次');
+      toast('已复制链接，发给好友后回来点分享');
     });
     return;
   }
   
   safeCopy(txt+' '+link);
-  shareCount++;remaining+=2;updateUI();
-  document.getElementById('shareBox').classList.remove('show');
-  toast('已复制 · +2次 ✨');
+  doShareUnlock();
   }catch(e){toast('分享出错，刷新重试');console.error(e)}
+}
+function doShareUnlock(){
+  const expire=Date.now()+7*86400000; // 7天
+  localStorage.setItem(UNLOCKED_KEY,String(expire));
+  maxQuota=UNLOCKED_MAX;remaining=maxQuota;
+  const d=new Date(expire);
+  updateUI();exportInsights();
+  toast(`📤 分享成功 · 7天畅聊 · ${d.getMonth()+1}/${d.getDate()}到期 ✨`);
 }
 function safeCopy(t){
   try{
@@ -513,9 +511,8 @@ function resetData(){
   localStorage.removeItem(FREE_INSIGHT_KEY);
   localStorage.removeItem(FOLLOWUP_KEY);
   localStorage.removeItem('tianshu_remain');
-  localStorage.removeItem('tianshu_share');
   localStorage.removeItem('tianshu_bonus');
-  remaining=maxQuota;shareCount=0;bonusUsed=false;followUpCount=0;freeInsightUsed=false;updateUI();
+  remaining=maxQuota;bonusUsed=false;followUpCount=0;freeInsightUsed=false;updateUI();
   document.getElementById('result').classList.remove('show');
   document.getElementById('resultText').innerHTML='';
   document.getElementById('conversationList').innerHTML='';
@@ -600,7 +597,7 @@ function exportInsights(){
     text+=`<div style="font-size:14px;color:#e8d5b7;line-height:2">${last.s}</div>\n`;
     text+=`</div>\n`;
     text+=`<div style="text-align:center;margin:16px 0;font-size:11px;color:rgba(232,213,183,.4)">这是天枢送你的第一次读心<br><br></div>\n`;
-    text+=`<button onclick="share()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">📤 分享好友 +2次</button>\n`;
+    text+=`<button onclick="share()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">📤 分享好友 · 7天畅聊</button>\n`;
     text+=`<button onclick="document.getElementById('payModal').classList.add('show');exportInsights()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(232,213,183,.5);padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🔓 解锁码</button>\n`;
     text+=`<div style="text-align:right;margin-top:16px"><a href="javascript:resetData()" style="color:rgba(255,255,255,.1);font-size:10px">重置</a></div>\n`;
     document.getElementById('result').classList.add('show');
@@ -609,7 +606,7 @@ function exportInsights(){
   }
   
   // ═══ 第二次洞察：强制分享/解锁 ═══
-  if(freeInsightUsed && !unlocked && shareCount===0 && remaining<=0){
+  if(freeInsightUsed && !unlocked && remaining<=0){
     text+=`<div style="background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);border-radius:14px;padding:24px;margin:12px 0;text-align:center">\n`;
     text+=`<div style="font-size:28px;margin-bottom:10px">🔒</div>\n`;
     text+=`<div style="font-size:12px;color:rgba(232,213,183,.4);margin-bottom:14px">第二次洞察需要分享或解锁</div>\n`;
