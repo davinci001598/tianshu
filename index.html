@@ -221,13 +221,13 @@ async function ask(){
     prompt=`${name}，${gender}，${birth}。想问:${q}。${histCtx}`;
     sp=richSp('ziwei',`你是天枢。紫微斗数15年。排十二宫看格局。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
   }else if(currentMode==='liuren'){
-    const t=document.getElementById('nowtime').value.trim()||'现在';
-    prompt=`${name}想问:${q}。${t}。${histCtx}`;
-    sp=richSp('liuren',`你是天枢。大六壬15年。起一课断吉凶。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
+    const t=document.getElementById('nowtime').value.trim()||('现在（'+new Date().toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})+'）');
+    prompt=`${name}想问:${q}。时间是${t}。${histCtx}`;
+    sp=richSp('liuren',`你是天枢。大六壬15年。起一课断吉凶。精准。今天是${new Date().toLocaleDateString('zh-CN')}。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
   }else{
-    const t=document.getElementById('nowtime').value.trim()||'现在';
-    prompt=`${name}想问:${q}。${t}。${histCtx}`;
-    sp=richSp('qimen',`你是天枢。奇门遁甲15年。看方位时机。精准。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
+    const t=document.getElementById('nowtime').value.trim()||('现在（'+new Date().toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})+'）');
+    prompt=`${name}想问:${q}。时间是${t}。${histCtx}`;
+    sp=richSp('qimen',`你是天枢。奇门遁甲15年。看方位时机。精准。今天是${new Date().toLocaleDateString('zh-CN')}。100-200字。称呼名字。${hist.length>0?'记得他。':''}`);
   }
 
   document.getElementById('result').classList.add('show');
@@ -270,11 +270,22 @@ async function ask(){
 
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
-  const link=url.origin+url.pathname+'?ref='+Date.now(),txt=`我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇`;
+  const link=url.origin+url.pathname+'?ref='+Date.now(),txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
   shareCount++;remaining+=2;updateUI();
-  if(/MicroMessenger/i.test(navigator.userAgent)){toast('📱 点右上角 ··· → 分享给朋友');copy(txt+' '+link)}
-  else if(navigator.share){navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).catch(()=>{})}
-  else{copy(txt+' '+link);toast('🔗 已复制，发给好友')}
+  if(navigator.share){
+    navigator.share({title:'AI在慢慢认识我',text:txt,url:link}).then(()=>{
+      toast('已分享 +2次 ✨');
+    }).catch(()=>{
+      copy(txt+' '+link);toast('已复制链接，发给好友 +2次 ✨');
+    });
+    return;
+  }
+  copy(txt+' '+link);
+  if(/MicroMessenger/i.test(navigator.userAgent)){
+    toast('已复制，直接粘贴发给微信好友 ✨');
+  }else{
+    toast('已复制链接，发给好友 ✨');
+  }
 }
 function copy(t){navigator.clipboard.writeText(t)}
 
