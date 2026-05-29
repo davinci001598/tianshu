@@ -96,13 +96,6 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><b>加微信</b>或<b>点底部文字</b>解锁更多<br>0点重置</div></div>
 
-<div id="apiSetup" style="background:rgba(255,255,255,0.02);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:rgba(232,213,183,.5);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-<span style="white-space:nowrap">🔑 API Key:</span>
-<input id="apiKey" type="password" placeholder="sk-..." style="flex:1;min-width:120px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;padding:6px 10px;border-radius:6px;font-size:11px">
-<button onclick="saveApiKey()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer">保存</button>
-<span id="apiStatus" style="font-size:10px;color:rgba(232,213,183,.3)"></span>
-</div>
-
 <div id="form-birthday">
 <div class="form-row"><div class="form-group"><div class="form-label">名字</div><input id="name" placeholder="怎么称呼你"></div><div class="narrow"><div class="form-label">性别</div><select id="gender"><option>男</option><option>女</option></select></div></div>
 <div class="form-group"><div class="form-label">出生时间</div><input id="birth" placeholder="如: 1990年5月20日午时"></div>
@@ -186,18 +179,6 @@ function addBonus(){
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
 
-function saveApiKey(){
-  const key=document.getElementById('apiKey').value.trim();
-  if(!key){toast('请粘贴 DeepSeek API Key');return}
-  if(!key.startsWith('sk-')){toast('Key 格式不对，应该以 sk- 开头');return}
-  localStorage.setItem('ds_key',key);
-  document.getElementById('apiStatus').textContent='✓ 已保存';
-  document.getElementById('apiStatus').style.color='rgba(201,169,110,.7)';
-  document.getElementById('apiKey').style.display='none';
-  setTimeout(()=>{document.getElementById('apiSetup').style.opacity='.4'},1500);
-  toast('API Key 已保存');
-}
-
 const url=new URL(window.location.href);
 if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
 const modeParam=url.searchParams.get('mode');
@@ -243,12 +224,10 @@ async function ask(){
   remaining--;updateUI();
 
   try{
-    // 检查API Key
-    const apiKey=localStorage.getItem('ds_key');
+    // 检查API Key（优先用localStorage中用户自设的，否则用默认Key）
+    const apiKey=localStorage.getItem('ds_key')||'sk-26c9e6a7cd044cf3a8beb33cc6a12951';
     if(!apiKey||apiKey.length<10){
-      document.getElementById('resultText').innerHTML='<div style="font-size:16px;color:#ffd700;margin-bottom:10px">⚠️ 未设置 API Key</div>请在下方输入框粘贴你的 DeepSeek API Key<br><br><span style="font-size:11px;color:rgba(232,213,183,.3)">获取方式：platform.deepseek.com → API Keys → 创建</span>';
-      document.getElementById('apiKey').style.display='block';
-      document.getElementById('apiSetup').style.opacity='1';
+      document.getElementById('resultText').innerHTML='<div style="font-size:16px;color:#ffd700;margin-bottom:10px">⚠️ 服务异常</div>请稍后重试';
       remaining++;updateUI();return;
     }
     const apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
@@ -443,17 +422,6 @@ function exportInsights(){
 }
 
 updateUI();loadHistory();
-
-// 页面加载时检测已有 API Key
-(function initApiKey(){
-  const saved=localStorage.getItem('ds_key');
-  if(saved){
-    document.getElementById('apiKey').style.display='none';
-    document.getElementById('apiStatus').textContent='✓ 已配置';
-    document.getElementById('apiStatus').style.color='rgba(201,169,110,.5)';
-    document.getElementById('apiSetup').style.opacity='.5';
-  }
-})();
 </script>
 </body>
 </html>
