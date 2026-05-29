@@ -239,15 +239,25 @@ async function ask(){
   }
 
   document.getElementById('result').classList.add('show');
-  document.getElementById('resultText').innerHTML=`${loading[currentMode]}...`;
+  document.getElementById('resultText').innerHTML=`<span style="font-size:18px">${loading[currentMode]}</span>`;
   remaining--;updateUI();
 
   try{
+    // 检查API Key
+    const apiKey=localStorage.getItem('ds_key');
+    if(!apiKey||apiKey.length<10){
+      document.getElementById('resultText').innerHTML='<div style="font-size:16px;color:#ffd700;margin-bottom:10px">⚠️ 未设置 API Key</div>请在下方输入框粘贴你的 DeepSeek API Key<br><br><span style="font-size:11px;color:rgba(232,213,183,.3)">获取方式：platform.deepseek.com → API Keys → 创建</span>';
+      document.getElementById('apiKey').style.display='block';
+      document.getElementById('apiSetup').style.opacity='1';
+      remaining++;updateUI();return;
+    }
     const apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
     const headers={'Content-Type':'application/json'};
-    if(!PROXY)headers['Authorization']='Bearer '+localStorage.getItem('ds_key')||'';
+    if(!PROXY)headers['Authorization']='Bearer '+apiKey;
     const r=await fetch(apiUrl,{method:'POST',headers,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sp},{role:'user',content:prompt}],temperature:0.9,max_tokens:400})});
-    const d=await r.json();const a=d.choices[0].message.content;
+    const d=await r.json();
+    if(d.error){throw new Error(d.error.message||'API错误')}
+    const a=d.choices[0].message.content;
     document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
     showConversationLog(name,currentMode,q,a);
     if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？分享给好友各得2次 ✨</span>';
@@ -259,7 +269,7 @@ async function ask(){
     if(totalForMode % SC_INTERVAL === 0){
       runSC(currentMode); // 不await，后台运行不阻塞
     }
-  }catch(e){document.getElementById('resultText').innerHTML='此刻无法感应，稍后再试';remaining++;updateUI()}
+  }catch(e){document.getElementById('resultText').innerHTML=`<div style="font-size:14px;color:#c9a96e">⚠️ ${e.message||'网络或API错误'}</div><br><span style="font-size:11px;color:rgba(232,213,183,.3)">检查API Key是否正确、余额是否充足</span>`;remaining++;updateUI()}
 }
 
 function share(){
