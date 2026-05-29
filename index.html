@@ -138,7 +138,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
-const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
+const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30,UNLOCKED_KEY='tv2_unlocked';
 let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
 const now2=new Date().toDateString();
 if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0');bonusUsed=localStorage.getItem('tianshu_bonus')==='true'}
@@ -356,7 +356,6 @@ function richSp(mode,base){
 }
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
-const UNLOCKED_KEY='tv2_unlocked';
 function isUnlocked(){
   const v=localStorage.getItem(UNLOCKED_KEY);
   if(!v||v==='0')return false;
