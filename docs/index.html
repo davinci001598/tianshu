@@ -286,14 +286,14 @@ if(/MicroMessenger/i.test(navigator.userAgent)){
 }
 
 function share(){
+  try{
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   const ref=Date.now(),link=url.origin+url.pathname+'?ref='+ref;
   const txt='我刚在跟一个AI聊天——它开始认识我了。你也来试试 👇';
   
   if(/MicroMessenger/i.test(navigator.userAgent)){
-    copy(txt+' '+link);
-    toast('已复制 · 点右上角···发给朋友');
-    // 兜底：5秒后 WeixinJSBridge 没触发就自动给
+    safeCopy(txt+' '+link);
+    document.getElementById('shareBox').innerHTML='<p style="font-size:11px;color:rgba(232,213,183,.5)">已复制 · 点右上角 <b>···</b> 发给朋友</p>';
     setTimeout(()=>{
       if(!wxBridgeFired&&shareCount<3){
         wxBridgeFired=true;
@@ -311,7 +311,7 @@ function share(){
       document.getElementById('shareBox').classList.remove('show');
       toast('分享成功 +2次 ✨');
     }).catch(()=>{
-      copy(txt+' '+link);
+      safeCopy(txt+' '+link);
       shareCount++;remaining+=2;updateUI();
       document.getElementById('shareBox').classList.remove('show');
       toast('已复制链接 · +2次 ✨');
@@ -319,12 +319,31 @@ function share(){
     return;
   }
   
-  copy(txt+' '+link);
+  safeCopy(txt+' '+link);
   shareCount++;remaining+=2;updateUI();
   document.getElementById('shareBox').classList.remove('show');
   toast('已复制链接 · +2次 ✨');
+  }catch(e){
+    toast('分享出错，刷新重试');
+    console.error(e);
+  }
 }
-function copy(t){navigator.clipboard.writeText(t)}
+function safeCopy(t){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t);
+      return true;
+    }
+  }catch(e){}
+  // 降级：用 textarea
+  const ta=document.createElement('textarea');
+  ta.value=t;ta.style.position='fixed';ta.style.left='-9999px';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy')}catch(e){}
+  document.body.removeChild(ta);
+  return false;
+}
+function copy(t){safeCopy(t)}
 
 function showWxModal(){document.getElementById('wechatModal').classList.add('show')}
 function showPayModal(){document.getElementById('payModal').classList.add('show')}
