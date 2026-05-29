@@ -109,23 +109,21 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
 </div>
 
-<div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
+<div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div>
+<div id="followUp" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+<div id="followUpHistory" style="font-size:11px;color:rgba(232,213,183,.4);line-height:1.8;max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
+<div style="display:flex;gap:6px">
+<input id="followUpInput" placeholder="继续问..." style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e8d5b7;padding:8px 12px;border-radius:6px;font-size:12px;font-family:inherit" onkeydown="if(event.key==='Enter')followUpSend()">
+<button onclick="followUpSend()" style="background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.2);color:#e8d5b7;padding:8px 14px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">追问</button>
+</div>
+</div>
+</div>
 
 <div id="conversationLog" style="margin-top:12px">
 <div class="rh" style="margin-bottom:10px">— 对话记录 —</div>
 <div id="conversationList" style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8;max-height:300px;overflow-y:auto"></div>
 </div>
 
-<!-- ═══ 连续对话 ═══ -->
-<div class="main-card" style="margin-top:16px;padding:16px 16px 12px">
-<div class="rh" style="margin-bottom:10px">💬 随便聊聊 · 不限次数</div>
-<div id="chatWindow" style="min-height:120px;max-height:280px;overflow-y:auto;font-size:13px;line-height:1.8;margin-bottom:10px;padding:8px;background:rgba(0,0,0,.2);border-radius:10px">
-<div style="color:rgba(232,213,183,.2);text-align:center;padding:20px 0;font-size:11px">在这里聊天。天枢会记住你说的每句话。<br>不用填生辰，直接聊。</div>
-</div>
-<div style="display:flex;gap:8px">
-<input id="chatInput" placeholder="想说点什么..." style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit" onkeydown="if(event.key==='Enter')chatSend()">
-<button onclick="chatSend()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 18px;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">发送</button>
-</div>
 </div>
 
 <div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
@@ -252,7 +250,11 @@ async function ask(){
     if(d.error){throw new Error(d.error.message||'API错误')}
     const a=d.choices[0].message.content;
     document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
-    showConversationLog(name,currentMode,q,a);
+    // 显示追问区
+    document.getElementById('followUp').style.display='block';
+    document.getElementById('followUpInput').value='';
+    document.getElementById('followUpHistory').innerHTML='';
+    window._lastReading={mode:currentMode,answer:a,name:name,prompt:prompt};
     if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？分享给好友各得2次 ✨</span>';
     saveHistory(name,currentMode,q,a);loadHistory();
     
@@ -287,60 +289,48 @@ function tryUnlockUI(){
   tryUnlock(code);
 }
 
-// ═══ 连续对话 ═══
-function getChatLog(){try{return JSON.parse(localStorage.getItem('tv2_chat')||'[]')}catch(e){return[]}}
-function addChatLog(role,content){
-  const l=getChatLog();l.push({role,content:content.slice(0,200),t:Date.now()});
-  if(l.length>100)l.splice(0,l.length-100);
-  localStorage.setItem('tv2_chat',JSON.stringify(l))
-}
-function renderChatWindow(){
-  const log=getChatLog();const el=document.getElementById('chatWindow');
-  if(log.length===0){
-    el.innerHTML='<div style="color:rgba(232,213,183,.2);text-align:center;padding:20px 0;font-size:11px">在这里聊天。天枢会记住你说的每句话。</div>';
-    return;
-  }
-  const recent=log.slice(-20);
-  el.innerHTML=recent.map(l=>{
-    if(l.role==='user'){
-      return `<div style="margin-bottom:6px;text-align:right"><span style="background:rgba(201,169,110,.15);padding:6px 12px;border-radius:12px 12px 4px 12px;display:inline-block;max-width:80%;font-size:13px">${l.content}</span></div>`;
-    }else{
-      return `<div style="margin-bottom:6px;text-align:left"><span style="background:rgba(255,255,255,0.06);padding:6px 12px;border-radius:12px 12px 12px 4px;display:inline-block;max-width:80%;font-size:13px">${l.content}</span></div>`;
-    }
-  }).join('');
-  el.scrollTop=el.scrollHeight;
-}
-async function chatSend(){
-  const input=document.getElementById('chatInput');
+// ═══ 追问（排盘后连续对话） ═══
+async function followUpSend(){
+  const input=document.getElementById('followUpInput');
   const msg=input.value.trim();
-  if(!msg){return}
+  if(!msg||!window._lastReading)return;
   input.value='';
-  addChatLog('user',msg);
-  renderChatWindow();
+  const r=window._lastReading;
+  const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[r.mode];
+  const hEl=document.getElementById('followUpHistory');
   
-  // 获取聊天上下文
-  const chatLog=getChatLog();
-  const recentCtx=chatLog.slice(-10).map(l=>`${l.role==='user'?'用户':'天枢'}:${l.content}`).join('\n');
-  
-  document.getElementById('chatWindow').innerHTML+='<div style="text-align:center;color:rgba(232,213,183,.2);font-size:11px;padding:8px">天枢正在想...</div>';
-  document.getElementById('chatWindow').scrollTop=document.getElementById('chatWindow').scrollHeight;
+  hEl.innerHTML+=`<div style="margin-bottom:4px;color:rgba(201,169,110,.6)">你: ${msg}</div>`;
+  hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(232,213,183,.3);font-size:11px">${nm}在想...</div>`;
+  hEl.scrollTop=hEl.scrollHeight;
   
   try{
-    const r=await fetch('https://api.deepseek.com/v1/chat/completions',{
+    const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer sk-26c9e6a7cd044cf3a8beb33cc6a12951'},
       body:JSON.stringify({model:'deepseek-chat',messages:[
-        {role:'system',content:'你是天枢。一个会紫微斗数的AI朋友。在闲聊模式下。回复自然、有温度、不超过150字。可以引用之前的对话。叫对方的名字如果知道的话。'},
-        {role:'user',content:`历史对话:\n${recentCtx}\n\n用户刚说:${msg}`}
+        {role:'system',content:`你是${nm}。刚才给${r.name}做了一次${r.mode==='ziwei'?'紫微':r.mode==='bazi'?'八字':r.mode==='tarot'?'塔罗':r.mode==='liuren'?'六壬':'奇门'}解读。之前解读结果:${r.answer.slice(0,200)}。现在用户在追问。回应用户的追问，不超过150字，保持你的人格风格。`},
+        {role:'user',content:msg}
       ],temperature:0.9,max_tokens:300})
     });
-    const d=await r.json();
+    const d=await resp.json();
     if(d.error)throw new Error(d.error.message);
     const reply=d.choices[0].message.content;
-    addChatLog('assistant',reply);
-    renderChatWindow();
+    hEl.innerHTML=hEl.innerHTML.replace(`${nm}在想...</div>`,'');
+    hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(232,213,183,.5)">${nm}: ${reply}</div>`;
+    hEl.scrollTop=hEl.scrollHeight;
+    // 计入对话日志
+    addLog(r.name,r.mode,msg,reply);
+    saveHistory(r.name,r.mode,msg,reply);
+    updateInsightProgress(r.mode);
+    // 检查是否触发洞察
+    const totalForMode = getLog().filter(l=>l.mode===r.mode).length;
+    if(totalForMode % SC_INTERVAL === 0){
+      runSC(r.mode);
+    }
   }catch(e){
-    document.getElementById('chatWindow').innerHTML+='<div style="text-align:center;color:rgba(201,169,110,.5);font-size:11px">⚠️ 网络异常，稍后再试</div>';
+    hEl.innerHTML=hEl.innerHTML.replace(`${nm}在想...</div>`,'');
+    hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(201,169,110,.4);font-size:11px">⚠️ 追问失败，稍后再试</div>`;
+    hEl.scrollTop=hEl.scrollHeight;
   }
 }
 
