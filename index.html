@@ -116,7 +116,24 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 </div>
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
-<div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
+
+<div id="conversationLog" style="margin-top:12px;display:none">
+<div class="rh" style="margin-bottom:10px">— 对话记录 —</div>
+<div id="conversationList" style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8;max-height:300px;overflow-y:auto"></div>
+</div>
+
+<div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button>
+<button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="showUnlockUI()">🔓 兑换码</button>
+</div>
+
+<div id="unlockUI" style="display:none;text-align:center;margin:10px 0;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px">
+<p style="font-size:11px;color:rgba(232,213,183,.5);margin-bottom:8px">关注公众号「理解心命」→ 发刊词赞赏 → 发「解锁」拿码</p>
+<div style="display:flex;gap:6px;justify-content:center">
+<input id="unlockCodeInput" placeholder="输入解锁码" style="width:55%;font-size:12px;padding:8px 12px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;border-radius:8px">
+<button onclick="tryUnlockUI()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">解锁</button>
+</div>
+</div>
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>想解锁全部？</h3><p>关注公众号「理解心命」<br>发刊词底部赞赏 → 发「解锁」拿码<br>→ 30天无限聊</p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制 → 去微信搜索关注</p><button class="btn-close" onclick="closeWx()">先免费聊</button></div></div>
@@ -188,7 +205,7 @@ if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){s
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
 
 async function ask(){
-  if(remaining<=0){updateUI();return}
+  if(remaining<=0){toast('今日次数已用完。分享给朋友各得2次，或分享3次后解锁付费');updateUI();return}
   const name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
   const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
 
@@ -232,7 +249,8 @@ async function ask(){
     const r=await fetch(apiUrl,{method:'POST',headers,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sp},{role:'user',content:prompt}],temperature:0.9,max_tokens:400})});
     const d=await r.json();const a=d.choices[0].message.content;
     document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
-    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
+    showConversationLog(name,currentMode,q,a);
+    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？分享给好友各得2次 ✨</span>';
     saveHistory(name,currentMode,q,a);loadHistory();
     
     // v2: 记录到对话日志 + 触发潜意识分析
@@ -259,7 +277,31 @@ function showPayModal(){document.getElementById('payModal').classList.add('show'
 function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
 function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
 
+function showUnlockUI(){const el=document.getElementById('unlockUI');el.style.display=el.style.display==='none'?'block':'none'}
+function tryUnlockUI(){
+  const code=document.getElementById('unlockCodeInput').value.trim();
+  if(!code){toast('请输入解锁码');return}
+  tryUnlock(code);
+}
+
 // ═══ v3 进化规则加载 ═══
+function showConversationLog(name,mode,q,answer){
+  const log=getLog();const el=document.getElementById('conversationLog');
+  const list=document.getElementById('conversationList');
+  const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
+  const recent=log.filter(l=>l.mode===mode).slice(-7);
+  el.style.display='block';
+  let html='';
+  // 显示历史记录
+  for(const l of recent){
+    html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:6px"><span style="color:rgba(201,169,110,.6)">你:</span> ${(l.qs||l.q||'').slice(0,40)}...<br><span style="color:rgba(232,213,183,.4)">${nm}:</span> ${(l.as||l.a||'').slice(0,50)}...</div>`;
+  }
+  // 显示当前对话
+  html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(201,169,110,.06);border-radius:6px;border-left:2px solid rgba(201,169,110,.3)"><span style="color:rgba(201,169,110,.8)">你:</span> ${q.slice(0,40)}...<br><span style="color:rgba(232,213,183,.6)">${nm}:</span> ${answer.slice(0,50)}...</div>`;
+  list.innerHTML=html;
+}
+
+// ═══ v3 进化规则加载 ═══ (keep)
 const EVOLVED_RULES={};
 (async function loadEvolvedRules(){
   try{
@@ -347,7 +389,23 @@ function exportInsights(){
     if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m});
   }
   hist.sort((a,b)=>a.t-b.t);
-  if(!hist.length){toast('还没有洞察。多聊几次再来。');return}
+  
+  if(!hist.length){
+    // 没有洞察时，显示最近对话记录
+    const conv=getLog();
+    if(conv.length===0){toast('先聊几次，天枢才能认识你');return}
+    let text='🔮 你的对话足迹\n━━━━━━━━━━\n\n';
+    text+='天枢还没攒够洞察，但你们聊过这些：\n\n';
+    const recent=conv.slice(-10).reverse();
+    for(const c of recent){
+      const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.mode]||c.mode;
+      text+=`📍 [${nm}] ${c.qs}...\n`;
+    }
+    text+='\n再聊几次，天枢就能读懂你了。';
+    document.getElementById('result').classList.add('show');
+    document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
+    return;
+  }
   
   const FREE=2;const total=hist.length;const unlocked=isUnlocked();
   let text=`🔮 我们眼中的你\n━━━━━━━━━━\n`;
