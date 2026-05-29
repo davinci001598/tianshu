@@ -111,7 +111,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
 
-<div id="conversationLog" style="margin-top:12px;display:none">
+<div id="conversationLog" style="margin-top:12px">
 <div class="rh" style="margin-bottom:10px">— 对话记录 —</div>
 <div id="conversationList" style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8;max-height:300px;overflow-y:auto"></div>
 </div>
@@ -120,6 +120,7 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button>
 <button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="showUnlockUI()">🔓 兑换码</button>
 </div>
+<div id="insightProgress" style="text-align:center;font-size:9px;color:rgba(232,213,183,.15);margin-top:4px"></div>
 
 <div id="unlockUI" style="display:none;text-align:center;margin:10px 0;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px">
 <p style="font-size:11px;color:rgba(232,213,183,.5);margin-bottom:8px">关注公众号「理解心命」→ 发刊词赞赏 → 发「解锁」拿码</p>
@@ -192,7 +193,7 @@ async function ask(){
   const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
 
   const hist=getHistory().filter(h=>h.name===name);
-  const histCtx=hist.length>0?`记得这个人。${hist[0].time}问过:${hist[0].q}。你上次说:${hist[0].answer}。主动提。`:'';
+  const histCtx=hist.length>0?`下面是关于这个人的记忆：${hist.slice(0,5).map((h,i)=>`第${i+1}次(${h.time}):问${h.q.slice(0,30)}→答${h.answer.slice(0,40)}`).join('；')}。请基于这些记忆自然对话。`:'';
 
   let prompt,sp;
   const loading={ziwei:'天枢排盘中',bazi:'沈砚排盘中',tarot:'言澈在洗牌...',liuren:'天枢起课中',qimen:'天枢排盘中'};
@@ -280,15 +281,23 @@ function showConversationLog(name,mode,q,answer){
   const list=document.getElementById('conversationList');
   const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
   const recent=log.filter(l=>l.mode===mode).slice(-7);
-  el.style.display='block';
   let html='';
-  // 显示历史记录
   for(const l of recent){
-    html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:6px"><span style="color:rgba(201,169,110,.6)">你:</span> ${(l.qs||l.q||'').slice(0,40)}...<br><span style="color:rgba(232,213,183,.4)">${nm}:</span> ${(l.as||l.a||'').slice(0,50)}...</div>`;
+    html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:6px"><span style="color:rgba(201,169,110,.6)">你:</span> ${(l.qs||l.q||'').slice(0,60)}<br><span style="color:rgba(232,213,183,.4)">${nm}:</span> ${(l.as||l.a||'').slice(0,80)}</div>`;
   }
-  // 显示当前对话
-  html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(201,169,110,.06);border-radius:6px;border-left:2px solid rgba(201,169,110,.3)"><span style="color:rgba(201,169,110,.8)">你:</span> ${q.slice(0,40)}...<br><span style="color:rgba(232,213,183,.6)">${nm}:</span> ${answer.slice(0,50)}...</div>`;
+  html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(201,169,110,.06);border-radius:6px;border-left:2px solid rgba(201,169,110,.3)"><span style="color:rgba(201,169,110,.8)">你:</span> ${q.slice(0,60)}<br><span style="color:rgba(232,213,183,.6)">${nm}:</span> ${answer.slice(0,80)}</div>`;
   list.innerHTML=html;
+  updateInsightProgress(mode);
+}
+function updateInsightProgress(mode){
+  const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
+  const total=getLog().filter(l=>l.mode===mode).length+1;
+  const remaining=SC_INTERVAL-(total%SC_INTERVAL);
+  if(remaining>0&&remaining<SC_INTERVAL){
+    document.getElementById('insightProgress').innerHTML='「'+nm+'」再聊 <b style="color:rgba(201,169,110,.5)">'+remaining+'</b> 次解锁一条洞察';
+  }else if(total%SC_INTERVAL===0){
+    document.getElementById('insightProgress').innerHTML='「'+nm+'」洞察已生成，点 <b style="color:rgba(201,169,110,.5)">🔍天枢眼中的你</b> 查看';
+  }
 }
 
 // ═══ v3 进化规则加载 ═══ (keep)
