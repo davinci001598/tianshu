@@ -116,6 +116,18 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 <div id="conversationList" style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8;max-height:300px;overflow-y:auto"></div>
 </div>
 
+<!-- ═══ 连续对话 ═══ -->
+<div class="main-card" style="margin-top:16px;padding:16px 16px 12px">
+<div class="rh" style="margin-bottom:10px">💬 随便聊聊 · 不限次数</div>
+<div id="chatWindow" style="min-height:120px;max-height:280px;overflow-y:auto;font-size:13px;line-height:1.8;margin-bottom:10px;padding:8px;background:rgba(0,0,0,.2);border-radius:10px">
+<div style="color:rgba(232,213,183,.2);text-align:center;padding:20px 0;font-size:11px">在这里聊天。天枢会记住你说的每句话。<br>不用填生辰，直接聊。</div>
+</div>
+<div style="display:flex;gap:8px">
+<input id="chatInput" placeholder="想说点什么..." style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;padding:10px 14px;border-radius:8px;font-size:13px;font-family:inherit" onkeydown="if(event.key==='Enter')chatSend()">
+<button onclick="chatSend()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 18px;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap">发送</button>
+</div>
+</div>
+
 <div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
 <button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button>
 <button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="showUnlockUI()">🔓 兑换码</button>
@@ -273,6 +285,63 @@ function tryUnlockUI(){
   const code=document.getElementById('unlockCodeInput').value.trim();
   if(!code){toast('请输入解锁码');return}
   tryUnlock(code);
+}
+
+// ═══ 连续对话 ═══
+function getChatLog(){try{return JSON.parse(localStorage.getItem('tv2_chat')||'[]')}catch(e){return[]}}
+function addChatLog(role,content){
+  const l=getChatLog();l.push({role,content:content.slice(0,200),t:Date.now()});
+  if(l.length>100)l.splice(0,l.length-100);
+  localStorage.setItem('tv2_chat',JSON.stringify(l))
+}
+function renderChatWindow(){
+  const log=getChatLog();const el=document.getElementById('chatWindow');
+  if(log.length===0){
+    el.innerHTML='<div style="color:rgba(232,213,183,.2);text-align:center;padding:20px 0;font-size:11px">在这里聊天。天枢会记住你说的每句话。</div>';
+    return;
+  }
+  const recent=log.slice(-20);
+  el.innerHTML=recent.map(l=>{
+    if(l.role==='user'){
+      return `<div style="margin-bottom:6px;text-align:right"><span style="background:rgba(201,169,110,.15);padding:6px 12px;border-radius:12px 12px 4px 12px;display:inline-block;max-width:80%;font-size:13px">${l.content}</span></div>`;
+    }else{
+      return `<div style="margin-bottom:6px;text-align:left"><span style="background:rgba(255,255,255,0.06);padding:6px 12px;border-radius:12px 12px 12px 4px;display:inline-block;max-width:80%;font-size:13px">${l.content}</span></div>`;
+    }
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+async function chatSend(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();
+  if(!msg){return}
+  input.value='';
+  addChatLog('user',msg);
+  renderChatWindow();
+  
+  // 获取聊天上下文
+  const chatLog=getChatLog();
+  const recentCtx=chatLog.slice(-10).map(l=>`${l.role==='user'?'用户':'天枢'}:${l.content}`).join('\n');
+  
+  document.getElementById('chatWindow').innerHTML+='<div style="text-align:center;color:rgba(232,213,183,.2);font-size:11px;padding:8px">天枢正在想...</div>';
+  document.getElementById('chatWindow').scrollTop=document.getElementById('chatWindow').scrollHeight;
+  
+  try{
+    const r=await fetch('https://api.deepseek.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sk-26c9e6a7cd044cf3a8beb33cc6a12951'},
+      body:JSON.stringify({model:'deepseek-chat',messages:[
+        {role:'system',content:'你是天枢。一个会紫微斗数的AI朋友。在闲聊模式下。回复自然、有温度、不超过150字。可以引用之前的对话。叫对方的名字如果知道的话。'},
+        {role:'user',content:`历史对话:\n${recentCtx}\n\n用户刚说:${msg}`}
+      ],temperature:0.9,max_tokens:300})
+    });
+    const d=await r.json();
+    if(d.error)throw new Error(d.error.message);
+    const reply=d.choices[0].message.content;
+    addChatLog('assistant',reply);
+    renderChatWindow();
+  }catch(e){
+    document.getElementById('chatWindow').innerHTML+='<div style="text-align:center;color:rgba(201,169,110,.5);font-size:11px">⚠️ 网络异常，稍后再试</div>';
+  }
 }
 
 // ═══ v3 进化规则加载 ═══
