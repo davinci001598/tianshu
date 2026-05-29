@@ -96,6 +96,13 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="quota"><div class="qn" id="qNum">3</div><div class="qt">每日免费 3 次<br><b>加微信</b>或<b>点底部文字</b>解锁更多<br>0点重置</div></div>
 
+<div id="apiSetup" style="background:rgba(255,255,255,0.02);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:rgba(232,213,183,.5);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<span style="white-space:nowrap">🔑 API Key:</span>
+<input id="apiKey" type="password" placeholder="sk-..." style="flex:1;min-width:120px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;padding:6px 10px;border-radius:6px;font-size:11px">
+<button onclick="saveApiKey()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer">保存</button>
+<span id="apiStatus" style="font-size:10px;color:rgba(232,213,183,.3)"></span>
+</div>
+
 <div id="form-birthday">
 <div class="form-row"><div class="form-group"><div class="form-label">名字</div><input id="name" placeholder="怎么称呼你"></div><div class="narrow"><div class="form-label">性别</div><select id="gender"><option>男</option><option>女</option></select></div></div>
 <div class="form-group"><div class="form-label">出生时间</div><input id="birth" placeholder="如: 1990年5月20日午时"></div>
@@ -123,7 +130,7 @@ for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s
 const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
 let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
 const now2=new Date().toDateString();
-if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
+if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0');bonusUsed=localStorage.getItem('tianshu_bonus')==='true'}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
 remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
 
@@ -157,9 +164,22 @@ function updateUI(){
 function addBonus(){
   if(bonusUsed){toast('今日彩蛋已用过，明天再来');return}
   remaining+=2;bonusUsed=true;updateUI();toast('✨ +2 次，明天还有')
+  localStorage.setItem('tianshu_bonus','true')
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
+
+function saveApiKey(){
+  const key=document.getElementById('apiKey').value.trim();
+  if(!key){toast('请粘贴 DeepSeek API Key');return}
+  if(!key.startsWith('sk-')){toast('Key 格式不对，应该以 sk- 开头');return}
+  localStorage.setItem('ds_key',key);
+  document.getElementById('apiStatus').textContent='✓ 已保存';
+  document.getElementById('apiStatus').style.color='rgba(201,169,110,.7)';
+  document.getElementById('apiKey').style.display='none';
+  setTimeout(()=>{document.getElementById('apiSetup').style.opacity='.4'},1500);
+  toast('API Key 已保存');
+}
 
 const url=new URL(window.location.href);
 if(url.searchParams.get('ref')){remaining=Math.min(remaining+2,maxQuota+20);toast('好友已帮你解锁 2 次 ✨');window.history.replaceState({},'',url.pathname)}
@@ -355,6 +375,17 @@ function exportInsights(){
 }
 
 updateUI();loadHistory();
+
+// 页面加载时检测已有 API Key
+(function initApiKey(){
+  const saved=localStorage.getItem('ds_key');
+  if(saved){
+    document.getElementById('apiKey').style.display='none';
+    document.getElementById('apiStatus').textContent='✓ 已配置';
+    document.getElementById('apiStatus').style.color='rgba(201,169,110,.5)';
+    document.getElementById('apiSetup').style.opacity='.5';
+  }
+})();
 </script>
 </body>
 </html>
