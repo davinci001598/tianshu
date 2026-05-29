@@ -268,14 +268,6 @@ async function ask(){
   }catch(e){document.getElementById('resultText').innerHTML=`<div style="font-size:14px;color:#c9a96e">⚠️ ${e.message||'网络或API错误'}</div><br><span style="font-size:11px;color:rgba(232,213,183,.3)">检查API Key是否正确、余额是否充足</span>`;remaining++;updateUI()}
 }
 
-let sharePending=0;
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden && sharePending && Date.now()-sharePending>2000){
-    shareCount++;remaining+=2;updateUI();
-    toast('欢迎回来 +2次 ✨');
-    sharePending=0;
-  }
-});
 function share(){
   if(shareCount>=3){toast('今日分享次数已用完，加微信继续聊');showWxModal();return}
   const ref=Date.now(),link=url.origin+url.pathname+'?ref='+ref;
@@ -287,18 +279,17 @@ function share(){
       toast('已分享 +2次 ✨');
     }).catch(()=>{
       copy(txt+' '+link);
-      toast('已复制链接，分享后朋友打开各得2次');
+      toast('已复制链接，发给好友即可');
     });
     return;
   }
   
   copy(txt+' '+link);
+  shareCount++;remaining+=2;updateUI();
   if(/MicroMessenger/i.test(navigator.userAgent)){
-    sharePending=Date.now();
-    document.getElementById('shareBox').innerHTML='<p style="font-size:11px;color:rgba(232,213,183,.5)">已复制 · 点右上角 <b>···</b> 发给朋友<br><span style="font-size:9px;color:rgba(232,213,183,.2)">分享完回来自动获得2次</span></p>';
-    setTimeout(()=>{if(sharePending)document.getElementById('shareBox').classList.remove('show')},8000);
+    toast('已复制 · 点右上角···发给朋友 +2次 ✨');
   }else{
-    toast('已复制链接，发给好友即可 ✨');
+    toast('已复制链接 · +2次 ✨');
   }
 }
 function copy(t){navigator.clipboard.writeText(t)}
