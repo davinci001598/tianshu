@@ -455,52 +455,146 @@ function tryUnlock(code){
   }
   toast('解锁码不对');return false;
 }
+function resetData(){
+  if(!confirm('确定要清除所有对话记录和洞察，回到初始状态吗？此操作不可恢复。'))return;
+  localStorage.removeItem('tv2_log');
+  localStorage.removeItem('tv2_ins');
+  localStorage.removeItem('tv2_hist');
+  localStorage.removeItem(UNLOCKED_KEY);
+  localStorage.removeItem('tianshu_remain');
+  localStorage.removeItem('tianshu_share');
+  localStorage.removeItem('tianshu_bonus');
+  remaining=maxQuota;shareCount=0;bonusUsed=false;updateUI();
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('resultText').innerHTML='';
+  document.getElementById('conversationList').innerHTML='';
+  document.getElementById('insightProgress').innerHTML='';
+  toast('已回到初始状态');
+}
+
+async function generatePortrait(){
+  const conv=getLog();
+  if(conv.length===0){toast('还没有对话记录');return}
+  const el=document.getElementById('resultText');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:rgba(232,213,183,.5)">天枢正在仔细看你...<br><span style="font-size:30px">🔮</span></div>';
+  
+  // 按模式分组 + 时间线整理
+  const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'};
+  const convByMode={};conv.forEach(c=>{const k=c.m;if(!convByMode[k])convByMode[k]=[];convByMode[k].push(c);});
+  let ctx='以下是这个人跟不同AI的所有对话记录：\n';
+  for(const[m,cs] of Object.entries(convByMode)){
+    const latest=cs.slice(-8);
+    ctx+=`\n【${nm[m]||m}】共${cs.length}次对话：\n`;
+    latest.forEach((c,i)=>ctx+=`  ${i+1}. ${c.n}: "${(c.qs||c.q||'').slice(0,80)}"\n`);
+  }
+  
+  const names=conv.map(c=>c.n).filter((v,i,a)=>a.indexOf(v)===i);
+  
+  try{
+    const r=await fetch('https://api.deepseek.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sk-26c9e6a7cd044cf3a8beb33cc6a12951'},
+      body:JSON.stringify({model:'deepseek-chat',messages:[
+        {role:'system',content:`你是一个敏锐的观察者。你正在阅读一个人跟AI助手的对话记录，从中勾勒出这个人的轮廓。不要分析命理结果，要观察这个人本身——ta关心什么、ta的提问方式暴露了什么、ta在什么话题下最投入/最犹豫/最脆弱。
+用第二人称"你"来写，像对老朋友说话。要有洞察但不居高临下。格式：
+【你关心的事】一句话概括
+【你的节奏】ta提问的特点
+【我注意到的】一个具体而温柔的观察
+【现在的你】总结印象
+总字数控制在150字以内。`},
+        {role:'user',content:`这个人叫${names.join('、')}。ta的对话记录：\n${ctx}\n\n请勾勒出你眼中的ta。`}
+      ],temperature:0.8,max_tokens:250})});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error.message);
+    const portrait=d.choices[0].message.content;
+    // 存为综合画像
+    const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
+    const existing=all['_portrait']||{history:[]};
+    existing.s=portrait;existing.u=Date.now();existing.n=conv.length;
+    existing.history.push({t:Date.now(),s:portrait,mode:'portrait'});
+    all['_portrait']=existing;
+    localStorage.setItem('tv2_ins',JSON.stringify(all));
+    exportInsights();
+  }catch(e){
+    el.innerHTML=`<div style="color:rgba(232,213,183,.6);text-align:center;padding:20px">生成失败：${e.message||'网络错误'}<br><br><button onclick="generatePortrait()" style="background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px 16px;border-radius:6px;cursor:pointer">重试</button></div>`;
+  }
+}
+
 function exportInsights(){
   const all=JSON.parse(localStorage.getItem('tv2_ins')||'{}');
   let hist=[];const names={ziwei:'天枢·紫微',bazi:'沈砚·八字',tarot:'言澈·塔罗',liuren:'天枢·六壬',qimen:'天枢·奇门'};
   for(const[m,d] of Object.entries(all)){
-    if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m});
+    if(m==='_portrait')continue;
+    if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m,key:m});
   }
   hist.sort((a,b)=>a.t-b.t);
   
-  if(!hist.length){
-    // 没有洞察时，显示最近对话记录
-    const conv=getLog();
-    if(conv.length===0){toast('先聊几次，天枢才能认识你');return}
-    let text='🔮 AI 眼中的你\n━━━━━━━━━━\n\n';
-    text+='再聊几次，天枢就能读懂你了。\n\n';
-    const recent=conv.slice(-10).reverse();
-    for(const c of recent){
-      const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.m]||c.m;
-      text+=`📍 [${nm}] ${(c.qs||c.q||'').slice(0,40)}\n`;
-    }
-    document.getElementById('result').classList.add('show');
-    document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
-    return;
+  const conv=getLog();
+  if(conv.length===0){toast('先聊几次，天枢才能认识你');return}
+  
+  const unlocked=isUnlocked();
+  const modes={};conv.forEach(c=>{modes[c.m]=(modes[c.m]||0)+1});
+  const portrait=all['_portrait'];
+  
+  let text='';
+  text+=`<div style="font-size:18px;font-weight:200;letter-spacing:3px;color:#e8d5b7;margin-bottom:4px">天枢眼中的你</div>\n`;
+  text+=`<div style="font-size:10px;color:rgba(232,213,183,.25);margin-bottom:16px">${new Date().toLocaleDateString('zh-CN')} · ${conv.length}次对话 · ${Object.keys(modes).length}种方式</div>\n`;
+  
+  // ═══ 综合画像卡片 ═══
+  if(portrait&&portrait.s){
+    text+=`<div style="background:linear-gradient(135deg,rgba(201,169,110,.08),rgba(201,169,110,.02));border:1px solid rgba(201,169,110,.2);border-radius:14px;padding:18px;margin:12px 0;position:relative">\n`;
+    text+=`<div style="font-size:9px;color:rgba(201,169,110,.4);position:absolute;top:10px;right:14px">综合画像</div>\n`;
+    text+=`<div style="font-size:13px;color:#e8d5b7;line-height:2;white-space:pre-wrap">${portrait.s}</div>\n`;
+    text+=`</div>\n`;
+    text+=`<div style="text-align:right;margin:4px 0 16px"><a href="javascript:generatePortrait()" style="color:rgba(201,169,110,.35);font-size:10px;text-decoration:none">🔄 刷新画像</a></div>\n`;
+  }else if(conv.length>=3){
+    // 有足够对话但没画像 → 引导生成
+    text+=`<div style="background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);border-radius:14px;padding:24px;margin:12px 0;text-align:center">\n`;
+    text+=`<div style="font-size:28px;margin-bottom:10px">🔮</div>\n`;
+    text+=`<div style="font-size:12px;color:rgba(232,213,183,.4);margin-bottom:14px">天枢还没好好看过你<br>让AI为你生成一份专属画像</div>\n`;
+    text+=`<button onclick="generatePortrait()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.35);color:#e8d5b7;padding:10px 32px;border-radius:8px;font-size:14px;cursor:pointer;letter-spacing:2px">生成我的画像</button>\n`;
+    text+=`</div>\n`;
+  }else{
+    text+=`<div style="text-align:center;color:rgba(232,213,183,.25);padding:24px;font-size:12px">再聊${3-conv.length}次，就能生成你的专属画像</div>\n`;
   }
   
-  const FREE=2;const unlocked=isUnlocked();
-  let text=`🔮 AI 眼中的你\n━━━━━━━━━━\n\n`;
-  const latest=hist[hist.length-1];
-  text+=`<span style="font-size:16px;color:#e8d5b7">${latest.s}</span>\n\n`;
-  if(unlocked){
-    if(hist.length>1){
-      text+=`<span style="font-size:10px;color:rgba(201,169,110,.4)">— 认识你的过程 —</span>\n`;
-      for(let i=0;i<hist.length-1;i++){
-        text+=`<span style="font-size:10px;color:rgba(232,213,183,.3)">第${i+1}次: ${hist[i].s.slice(0,60)}</span>\n`;
-      }
+  // ═══ 各模式洞察 ═══
+  if(hist.length>0){
+    text+=`<div style="font-size:10px;color:rgba(201,169,110,.4);margin:20px 0 8px;letter-spacing:2px">— 各阶段观察 —</div>\n`;
+    const show=unlocked?hist:hist.slice(0,2);
+    for(let i=show.length-1;i>=0;i--){
+      const h=show[i];
+      text+=`<div style="background:rgba(255,255,255,.02);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:2px solid rgba(201,169,110,.15)">\n`;
+      text+=`<div style="font-size:9px;color:rgba(201,169,110,.35);margin-bottom:4px">${h.mode} · ${new Date(h.t).toLocaleDateString('zh-CN')}</div>\n`;
+      text+=`<div style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8">${h.s}</div>\n`;
+      text+=`</div>\n`;
     }
-    const rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
-    text+=`\n━━━━━━━━━━\n🔓 剩余${rd}天 · ${hist.length}次洞察`;
-  }else{
-    for(let i=0;i<Math.min(hist.length,FREE);i++){
-      text+=`<span style="font-size:10px;color:rgba(232,213,183,.3)">${hist[i].s.slice(0,60)}</span>\n`;
+    if(!unlocked&&hist.length>2){
+      text+=`<div style="text-align:center;margin:12px 0">\n`;
+      text+=`<input id="unlockInput" placeholder="输入解锁码查看全部" style="width:55%;font-size:12px;padding:7px 10px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;border-radius:6px">\n`;
+      text+=`<button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="margin-left:4px;background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.25);color:#e8d5b7;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer">解锁</button>\n`;
+      text+=`</div>\n`;
     }
-    if(hist.length>FREE){
-      text+=`\n🔒 还有${hist.length-FREE}次洞察待解锁\n`;
-      text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;border-radius:8px"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
+  }else if(conv.length>0){
+    // 没有洞察但有对话
+    text+=`<div style="font-size:10px;color:rgba(232,213,183,.2);margin:16px 0 8px">最近的对话：</div>\n`;
+    const recent=conv.slice(-5).reverse();
+    for(const c of recent){
+      const nm2={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.m]||c.m;
+      text+=`<div style="font-size:10px;color:rgba(232,213,183,.15);margin:3px 0;padding:4px 8px;background:rgba(255,255,255,.01);border-radius:4px">📍 ${nm2}: ${(c.qs||c.q||'').slice(0,35)}</div>\n`;
     }
+    text+=`<div style="text-align:center;margin-top:12px">\n`;
+    text+=`<button onclick="generatePortrait()" style="background:rgba(201,169,110,.1);border:1px solid rgba(201,169,110,.2);color:rgba(232,213,183,.6);padding:6px 20px;border-radius:6px;font-size:11px;cursor:pointer">✨ 生成初见印象</button>\n`;
+    text+=`</div>\n`;
   }
+  
+  // ═══ 底部操作 ═══
+  text+=`\n<div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:12px;border-top:1px solid rgba(255,255,255,.04)">\n`;
+  text+=`<a href="javascript:resetData()" style="color:rgba(255,255,255,.12);font-size:10px;text-decoration:none">回到初始状态</a>\n`;
+  if(portrait&&portrait.u){
+    text+=`<span style="font-size:9px;color:rgba(255,255,255,.1)">画像更新于 ${new Date(portrait.u).toLocaleDateString('zh-CN')}</span>\n`;
+  }
+  text+=`</div>\n`;
   
   document.getElementById('result').classList.add('show');
   document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
