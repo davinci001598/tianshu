@@ -200,6 +200,7 @@ const url=new URL(window.location.href);
 const visitorRef=url.searchParams.get('ref');
 if(visitorRef){
   remaining=Math.min(remaining+2,maxQuota+20);
+  localStorage.setItem('tianshu_remain',remaining);
   toast('好友已帮你解锁 2 次 ✨');
   window.history.replaceState({},'',url.pathname);
   // 记录被打开的ref，分享者下次访问时可检测
@@ -207,12 +208,12 @@ if(visitorRef){
   visited.push(visitorRef);
   localStorage.setItem('tv2_visited_refs',JSON.stringify(visited.slice(-20)));
 }
-// 检测自己的分享是否被朋友打开
+// 检测自己的分享是否被朋友打开（分享者侧）
 const myPendingRef=localStorage.getItem('tv2_pending_ref');
-if(myPendingRef&&!isUnlocked()){
+if(myPendingRef&&!isUnlocked()&&!visitorRef){
   const visited=JSON.parse(localStorage.getItem('tv2_visited_refs')||'[]');
   if(visited.includes(myPendingRef)){
-    setTimeout(doShareUnlock,100); // DOM就绪后再解锁
+    setTimeout(doShareUnlock,200);
   }
 }
 const modeParam=url.searchParams.get('mode');
