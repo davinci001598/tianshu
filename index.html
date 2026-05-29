@@ -10,6 +10,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:linear-gr
 .stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .star{position:absolute;background:#e8d5b7;border-radius:50%;animation:twinkle var(--dur) ease-in-out infinite;animation-delay:var(--delay);opacity:0}
 @keyframes twinkle{0%,100%{opacity:0}50%{opacity:0.8}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .container{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:20px 16px 60px}
 .header{text-align:center;padding:30px 0 20px;animation:slideUp 0.8s ease-out}
@@ -148,10 +149,10 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
-const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30,UNLOCKED_KEY='tv2_unlocked';
-let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
+const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30,UNLOCKED_KEY='tv2_unlocked',FREE_INSIGHT_KEY='tv2_free_insight',FOLLOWUP_KEY='tianshu_followup';
+let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX,followUpCount,freeInsightUsed;
 const now2=new Date().toDateString();
-if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0');bonusUsed=localStorage.getItem('tianshu_bonus')==='true'}
+if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;followUpCount=0;freeInsightUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false');localStorage.setItem(FOLLOWUP_KEY,'0');localStorage.setItem(FREE_INSIGHT_KEY,'false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0');bonusUsed=localStorage.getItem('tianshu_bonus')==='true';followUpCount=parseInt(localStorage.getItem(FOLLOWUP_KEY)||'0');freeInsightUsed=localStorage.getItem(FREE_INSIGHT_KEY)==='true'}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
 remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
 
@@ -178,8 +179,18 @@ function updateUI(){
   document.getElementById('shareLeft').textContent=3-shareCount;
   document.querySelector('.btn-primary').style.opacity=remaining<=0?'.4':'1';
   if(remaining<=0&&shareExhausted&&!isUnlocked())showPayModal();
+  // 剩1次 + 有洞察 + 还没用免费 → 高亮提示
+  if(remaining===1&&!freeInsightUsed){
+    document.getElementById('qNum').style.color='#ffd700';
+    document.getElementById('qNum').style.animation='pulse 1.5s infinite';
+  }else{
+    document.getElementById('qNum').style.color='#ffd700';
+    document.getElementById('qNum').style.animation='';
+  }
   localStorage.setItem('tianshu_remain',remaining);
   localStorage.setItem('tianshu_share',shareCount);
+  localStorage.setItem(FOLLOWUP_KEY,followUpCount);
+  localStorage.setItem(FREE_INSIGHT_KEY,freeInsightUsed);
 }
 
 function addBonus(){
@@ -256,7 +267,11 @@ async function ask(){
     window._lastReading={mode:currentMode,answer:a,name:name,prompt:prompt};
     // 更新洞察进度（排盘也计数）
     updateInsightProgress();
-    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？分享给好友各得2次 ✨</span>';
+    if(remaining<=0&&!freeInsightUsed){
+      document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数用完了？分享给好友各得2次 ✨</span>';
+    }else if(remaining===1&&!freeInsightUsed){
+      document.getElementById('resultText').innerHTML+='<br><br><div style="background:linear-gradient(135deg,rgba(201,169,110,.1),rgba(201,169,110,.03));border:1px solid rgba(201,169,110,.2);border-radius:10px;padding:12px;text-align:center;margin-top:10px"><span style="font-size:12px;color:#ffd700">天枢想送你一次免费读心</span><br><span style="font-size:10px;color:rgba(232,213,183,.3)">点 🔍天枢眼中的你 查看</span></div>';
+    }
     saveHistory(name,currentMode,q,a);loadHistory();
     
     // v2: 记录到对话日志 + 触发潜意识分析
@@ -281,9 +296,7 @@ function share(){
       toast('分享成功 +2次 ✨');
     }).catch(()=>{
       safeCopy(txt+' '+link);
-      shareCount++;remaining+=2;updateUI();
-      document.getElementById('shareBox').classList.remove('show');
-      toast('已复制链接 · +2次 ✨');
+      toast('已复制，分享后朋友打开链接即得2次');
     });
     return;
   }
@@ -292,10 +305,7 @@ function share(){
   shareCount++;remaining+=2;updateUI();
   document.getElementById('shareBox').classList.remove('show');
   toast('已复制 · +2次 ✨');
-  }catch(e){
-    toast('分享出错，刷新重试');
-    console.error(e);
-  }
+  }catch(e){toast('分享出错，刷新重试');console.error(e)}
 }
 function safeCopy(t){
   try{
@@ -355,10 +365,12 @@ async function followUpSend(){
     hEl.innerHTML=hEl.innerHTML.replace(`${nm}在想...</div>`,'');
     hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(232,213,183,.5)">${nm}: ${reply}</div>`;
     hEl.scrollTop=hEl.scrollHeight;
-    // 计入对话日志
+    // 计入对话日志 + 追问扣次数
     addLog(r.name,r.mode,msg,reply);
     saveHistory(r.name,r.mode,msg,reply);
-    // 显示+1提示
+    followUpCount++;
+    if(followUpCount>=3){followUpCount=0;remaining--;updateUI();}
+    // 显示洞察进度
     const prev=getLog().filter(l=>l.m===r.mode).length-1;
     const nextThresh=Math.ceil((prev+1)/SC_INTERVAL)*SC_INTERVAL;
     const left=nextThresh-(prev+1);
@@ -498,10 +510,12 @@ function resetData(){
   localStorage.removeItem('tv2_ins');
   localStorage.removeItem('tv2_hist');
   localStorage.removeItem(UNLOCKED_KEY);
+  localStorage.removeItem(FREE_INSIGHT_KEY);
+  localStorage.removeItem(FOLLOWUP_KEY);
   localStorage.removeItem('tianshu_remain');
   localStorage.removeItem('tianshu_share');
   localStorage.removeItem('tianshu_bonus');
-  remaining=maxQuota;shareCount=0;bonusUsed=false;updateUI();
+  remaining=maxQuota;shareCount=0;bonusUsed=false;followUpCount=0;freeInsightUsed=false;updateUI();
   document.getElementById('result').classList.remove('show');
   document.getElementById('resultText').innerHTML='';
   document.getElementById('conversationList').innerHTML='';
@@ -577,7 +591,41 @@ function exportInsights(){
   text+=`<div style="font-size:18px;font-weight:200;letter-spacing:3px;color:#e8d5b7;margin-bottom:4px">天枢眼中的你</div>\n`;
   text+=`<div style="font-size:10px;color:rgba(232,213,183,.25);margin-bottom:16px">${new Date().toLocaleDateString('zh-CN')} · ${conv.length}次对话 · ${Object.keys(modes).length}种方式</div>\n`;
   
-  // ═══ 综合画像卡片 ═══
+  // ═══ 免费第一次洞察（还剩次数=1时） ═══
+  if(!freeInsightUsed && hist.length>0){
+    freeInsightUsed=true;remaining=0;updateUI();
+    const last=hist[hist.length-1];
+    text+=`<div style="background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(201,169,110,.02));border:2px solid rgba(255,215,0,.2);border-radius:14px;padding:18px;margin:12px 0;position:relative">\n`;
+    text+=`<div style="font-size:9px;color:#ffd700;position:absolute;top:10px;right:14px">🎁 免费读心</div>\n`;
+    text+=`<div style="font-size:14px;color:#e8d5b7;line-height:2">${last.s}</div>\n`;
+    text+=`</div>\n`;
+    text+=`<div style="text-align:center;margin:16px 0;font-size:11px;color:rgba(232,213,183,.4)">这是天枢送你的第一次读心<br><br></div>\n`;
+    text+=`<button onclick="share()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">📤 分享好友 +2次</button>\n`;
+    text+=`<button onclick="document.getElementById('payModal').classList.add('show');exportInsights()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(232,213,183,.5);padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🔓 解锁码</button>\n`;
+    text+=`<div style="text-align:right;margin-top:16px"><a href="javascript:resetData()" style="color:rgba(255,255,255,.1);font-size:10px">重置</a></div>\n`;
+    document.getElementById('result').classList.add('show');
+    document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
+    return;
+  }
+  
+  // ═══ 第二次洞察：强制分享/解锁 ═══
+  if(freeInsightUsed && !unlocked && shareCount===0 && remaining<=0){
+    text+=`<div style="background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);border-radius:14px;padding:24px;margin:12px 0;text-align:center">\n`;
+    text+=`<div style="font-size:28px;margin-bottom:10px">🔒</div>\n`;
+    text+=`<div style="font-size:12px;color:rgba(232,213,183,.4);margin-bottom:14px">第二次洞察需要分享或解锁</div>\n`;
+    text+=`<button onclick="share()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">📤 分享好友</button>\n`;
+    text+=`<button onclick="document.getElementById('payModal').classList.add('show');exportInsights()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(232,213,183,.5);padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🔓 解锁码</button>\n`;
+    text+=`</div>\n`;
+    if(hist.length>0){
+      text+=`<div style="font-size:10px;color:rgba(232,213,183,.15);text-align:center;margin-top:16px">已有${hist.length}条洞察等待解锁</div>\n`;
+    }
+    text+=`<div style="text-align:right;margin-top:16px"><a href="javascript:resetData()" style="color:rgba(255,255,255,.1);font-size:10px">重置</a></div>\n`;
+    document.getElementById('result').classList.add('show');
+    document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
+    return;
+  }
+  
+  // ═══ 已解锁/已分享 → 正常显示 ═══
   if(portrait&&portrait.s){
     text+=`<div style="background:linear-gradient(135deg,rgba(201,169,110,.08),rgba(201,169,110,.02));border:1px solid rgba(201,169,110,.2);border-radius:14px;padding:18px;margin:12px 0;position:relative">\n`;
     text+=`<div style="font-size:9px;color:rgba(201,169,110,.4);position:absolute;top:10px;right:14px">综合画像</div>\n`;
@@ -585,7 +633,6 @@ function exportInsights(){
     text+=`</div>\n`;
     text+=`<div style="text-align:right;margin:4px 0 16px"><a href="javascript:generatePortrait()" style="color:rgba(201,169,110,.35);font-size:10px;text-decoration:none">🔄 刷新画像</a></div>\n`;
   }else if(conv.length>=3){
-    // 有足够对话但没画像 → 引导生成
     text+=`<div style="background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.1);border-radius:14px;padding:24px;margin:12px 0;text-align:center">\n`;
     text+=`<div style="font-size:28px;margin-bottom:10px">🔮</div>\n`;
     text+=`<div style="font-size:12px;color:rgba(232,213,183,.4);margin-bottom:14px">天枢还没好好看过你<br>让AI为你生成一份专属画像</div>\n`;
@@ -595,37 +642,17 @@ function exportInsights(){
     text+=`<div style="text-align:center;color:rgba(232,213,183,.25);padding:24px;font-size:12px">再聊${3-conv.length}次，就能生成你的专属画像</div>\n`;
   }
   
-  // ═══ 各模式洞察 ═══
   if(hist.length>0){
     text+=`<div style="font-size:10px;color:rgba(201,169,110,.4);margin:20px 0 8px;letter-spacing:2px">— 各阶段观察 —</div>\n`;
-    const show=unlocked?hist:hist.slice(0,2);
-    for(let i=show.length-1;i>=0;i--){
-      const h=show[i];
+    for(let i=hist.length-1;i>=0;i--){
+      const h=hist[i];
       text+=`<div style="background:rgba(255,255,255,.02);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:2px solid rgba(201,169,110,.15)">\n`;
       text+=`<div style="font-size:9px;color:rgba(201,169,110,.35);margin-bottom:4px">${h.mode} · ${new Date(h.t).toLocaleDateString('zh-CN')}</div>\n`;
       text+=`<div style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8">${h.s}</div>\n`;
       text+=`</div>\n`;
     }
-    if(!unlocked&&hist.length>2){
-      text+=`<div style="text-align:center;margin:12px 0">\n`;
-      text+=`<input id="unlockInput" placeholder="输入解锁码查看全部" style="width:55%;font-size:12px;padding:7px 10px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;border-radius:6px">\n`;
-      text+=`<button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="margin-left:4px;background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.25);color:#e8d5b7;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer">解锁</button>\n`;
-      text+=`</div>\n`;
-    }
-  }else if(conv.length>0){
-    // 没有洞察但有对话
-    text+=`<div style="font-size:10px;color:rgba(232,213,183,.2);margin:16px 0 8px">最近的对话：</div>\n`;
-    const recent=conv.slice(-5).reverse();
-    for(const c of recent){
-      const nm2={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.m]||c.m;
-      text+=`<div style="font-size:10px;color:rgba(232,213,183,.15);margin:3px 0;padding:4px 8px;background:rgba(255,255,255,.01);border-radius:4px">📍 ${nm2}: ${(c.qs||c.q||'').slice(0,35)}</div>\n`;
-    }
-    text+=`<div style="text-align:center;margin-top:12px">\n`;
-    text+=`<button onclick="generatePortrait()" style="background:rgba(201,169,110,.1);border:1px solid rgba(201,169,110,.2);color:rgba(232,213,183,.6);padding:6px 20px;border-radius:6px;font-size:11px;cursor:pointer">✨ 生成初见印象</button>\n`;
-    text+=`</div>\n`;
   }
   
-  // ═══ 底部操作 ═══
   text+=`\n<div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;padding-top:12px;border-top:1px solid rgba(255,255,255,.04)">\n`;
   text+=`<a href="javascript:resetData()" style="color:rgba(255,255,255,.12);font-size:10px;text-decoration:none">回到初始状态</a>\n`;
   if(portrait&&portrait.u){
