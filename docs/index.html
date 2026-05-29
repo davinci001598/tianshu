@@ -203,7 +203,7 @@ if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){s
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
 
 async function ask(){
-  if(remaining<=0){toast('今日次数已用完。分享给朋友各得2次，或分享3次后解锁付费');updateUI();return}
+  if(remaining<=0){toast('次数用完 · 点 🔍天枢眼中的你 查看免费读心');updateUI();return}
   const name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
   const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
 
@@ -367,13 +367,23 @@ async function followUpSend(){
     addLog(r.name,r.mode,msg,reply);
     saveHistory(r.name,r.mode,msg,reply);
     followUpCount++;
-    if(followUpCount>=3){followUpCount=0;remaining--;updateUI();}
+    if(followUpCount>=3){
+      followUpCount=0;
+      if(remaining>0)remaining--;
+      if(remaining<0)remaining=0;
+      updateUI();
+    }
     // 显示洞察进度
     const prev=getLog().filter(l=>l.m===r.mode).length-1;
     const nextThresh=Math.ceil((prev+1)/SC_INTERVAL)*SC_INTERVAL;
     const left=nextThresh-(prev+1);
-    if(left>0)toast('追问已计入 · 再聊'+left+'次解锁洞察');
-    else toast('洞察已解锁！点天枢眼中的你查看');
+    if(remaining<=0&&!isUnlocked()){
+      toast('次数用完 · 点 🔍天枢眼中的你 查看免费读心');
+    }else if(left>0){
+      toast('追问已计入 · 再聊'+left+'次解锁洞察');
+    }else{
+      toast('洞察已解锁！点天枢眼中的你查看');
+    }
     updateInsightProgress(r.mode);
     // 检查是否触发洞察
     if((prev+1) % SC_INTERVAL === 0){
