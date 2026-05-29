@@ -319,10 +319,15 @@ async function followUpSend(){
     // 计入对话日志
     addLog(r.name,r.mode,msg,reply);
     saveHistory(r.name,r.mode,msg,reply);
+    // 显示+1提示
+    const prev=getLog().filter(l=>l.mode===r.mode).length-1;
+    const nextThresh=Math.ceil((prev+1)/SC_INTERVAL)*SC_INTERVAL;
+    const left=nextThresh-(prev+1);
+    if(left>0)toast('追问已计入 · 再聊'+left+'次解锁洞察');
+    else toast('洞察已解锁！点天枢眼中的你查看');
     updateInsightProgress(r.mode);
     // 检查是否触发洞察
-    const totalForMode = getLog().filter(l=>l.mode===r.mode).length;
-    if(totalForMode % SC_INTERVAL === 0){
+    if((prev+1) % SC_INTERVAL === 0){
       runSC(r.mode);
     }
   }catch(e){
