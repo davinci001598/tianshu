@@ -105,11 +105,38 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 
 <div class="form-group"><div class="form-label" id="questionLabel">你想问的</div><textarea id="question" placeholder="可以是事业、感情、抉择..."></textarea></div>
 <button class="btn btn-primary" onclick="ask()">开 始 解 读</button>
+<div style="text-align:center;margin-top:6px"><button style="background:none;border:1px dashed rgba(255,255,255,.15);color:rgba(255,255,255,.2);padding:4px 12px;border-radius:4px;font-size:9px;cursor:pointer" onclick="toast('JS正常 · 剩余'+remaining+'次 · 模式:'+currentMode)">测试按钮</button></div>
 <div class="share-area" id="shareBox"><p>🔗 分享给朋友 · 各得 2 次<br>今日还可分享 <b id="shareLeft">3</b> 次</p><button class="btn btn-share" onclick="share()">分享好友</button></div>
 </div>
 
-<div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div></div>
-<div style="text-align:center;margin-top:12px"><button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 20px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button></div>
+<div class="result" id="result"><div class="rh">— 解读 —</div><div id="resultText"></div>
+<div id="followUp" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+<div id="followUpHistory" style="font-size:11px;color:rgba(232,213,183,.4);line-height:1.8;max-height:200px;overflow-y:auto;margin-bottom:8px"></div>
+<div style="display:flex;gap:6px">
+<input id="followUpInput" placeholder="继续问..." style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);color:#e8d5b7;padding:8px 12px;border-radius:6px;font-size:12px;font-family:inherit" onkeydown="if(event.key==='Enter')followUpSend()">
+<button onclick="followUpSend()" style="background:rgba(201,169,110,.12);border:1px solid rgba(201,169,110,.2);color:#e8d5b7;padding:8px 14px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">追问</button>
+</div>
+</div>
+</div>
+
+<div id="conversationLog" style="margin-top:12px">
+<div class="rh" style="margin-bottom:10px">— 对话记录 —</div>
+<div id="conversationList" style="font-size:11px;color:rgba(232,213,183,.5);line-height:1.8;max-height:300px;overflow-y:auto"></div>
+</div>
+
+<div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+<button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="exportInsights()">🔍 天枢眼中的你</button>
+<button class="btn" style="background:rgba(255,255,255,0.04);color:rgba(232,213,183,.4);font-size:11px;letter-spacing:1px;padding:8px 16px;width:auto" onclick="showUnlockUI()">🔓 兑换码</button>
+</div>
+<div id="insightProgress" style="text-align:center;font-size:9px;color:rgba(232,213,183,.15);margin-top:4px"></div>
+
+<div id="unlockUI" style="display:none;text-align:center;margin:10px 0;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px">
+<p style="font-size:11px;color:rgba(232,213,183,.5);margin-bottom:8px">关注公众号「理解心命」→ 发刊词赞赏 → 发「解锁」拿码</p>
+<div style="display:flex;gap:6px;justify-content:center">
+<input id="unlockCodeInput" placeholder="输入解锁码" style="width:55%;font-size:12px;padding:8px 12px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;border-radius:8px">
+<button onclick="tryUnlockUI()" style="background:rgba(201,169,110,.15);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px 16px;border-radius:8px;font-size:12px;cursor:pointer">解锁</button>
+</div>
+</div>
 <div class="footer" onclick="addBonus()">三个会认识你的AI · 每一次对话都算数</div>
 <div class="toast" id="toast"></div>
 <div class="wechat-modal" id="wechatModal"><div class="wechat-card"><h3>想解锁全部？</h3><p>关注公众号「理解心命」<br>发刊词底部赞赏 → 发「解锁」拿码<br>→ 30天无限聊</p><div class="wx-id" id="wxIdText" onclick="copyWx()">理解心命</div><p style="font-size:10px;color:rgba(255,255,255,.3)">点上方复制 → 去微信搜索关注</p><button class="btn-close" onclick="closeWx()">先免费聊</button></div></div>
@@ -120,10 +147,10 @@ select{width:100%;padding:12px 8px;border-radius:10px;background:rgba(255,255,25
 const stars=document.getElementById('stars');
 for(let i=0;i<60;i++){const s=document.createElement('div');s.className='star';s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${Math.random()*2+1}px;height:${Math.random()*2+1}px;--dur:${Math.random()*3+2}s;--delay:${Math.random()*3}s`;stars.appendChild(s)}
 
-const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30;
+const PROXY='',BASE_MAX=3,UNLOCKED_MAX=30,UNLOCKED_KEY='tv2_unlocked';
 let today=localStorage.getItem('tianshu_date')||'',remaining,shareCount,currentMode='ziwei',bonusUsed,maxQuota=BASE_MAX;
 const now2=new Date().toDateString();
-if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today)}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0')}
+if(today!==now2){maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;remaining=maxQuota;shareCount=0;bonusUsed=false;today=now2;localStorage.setItem('tianshu_date',today);localStorage.setItem('tianshu_bonus','false')}else{remaining=parseInt(localStorage.getItem('tianshu_remain')||''+maxQuota);shareCount=parseInt(localStorage.getItem('tianshu_share')||'0');bonusUsed=localStorage.getItem('tianshu_bonus')==='true'}
 maxQuota=isUnlocked()?UNLOCKED_MAX:BASE_MAX;
 remaining=Math.min(remaining,maxQuota+20);shareCount=Math.min(shareCount,3);
 
@@ -157,6 +184,7 @@ function updateUI(){
 function addBonus(){
   if(bonusUsed){toast('今日彩蛋已用过，明天再来');return}
   remaining+=2;bonusUsed=true;updateUI();toast('✨ +2 次，明天还有')
+  localStorage.setItem('tianshu_bonus','true')
 }
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2000)}
@@ -168,12 +196,12 @@ if(modeParam && ['ziwei','bazi','tarot','liuren','qimen'].includes(modeParam)){s
 if(url.searchParams.get('insights')==='1'){setTimeout(exportInsights,500)}
 
 async function ask(){
-  if(remaining<=0){updateUI();return}
+  if(remaining<=0){toast('今日次数已用完。分享给朋友各得2次，或分享3次后解锁付费');updateUI();return}
   const name=(document.getElementById('name').value||document.getElementById('name2').value||document.getElementById('name3').value).trim()||'朋友';
   const q=document.getElementById('question').value.trim();if(!q){toast('请写下你想问的');return}
 
   const hist=getHistory().filter(h=>h.name===name);
-  const histCtx=hist.length>0?`记得这个人。${hist[0].time}问过:${hist[0].q}。你上次说:${hist[0].answer}。主动提。`:'';
+  const histCtx=hist.length>0?`下面是关于这个人的记忆：${hist.slice(0,5).map((h,i)=>`第${i+1}次(${h.time}):问${h.q.slice(0,30)}→答${h.answer.slice(0,40)}`).join('；')}。请基于这些记忆自然对话。`:'';
 
   let prompt,sp;
   const loading={ziwei:'天枢排盘中',bazi:'沈砚排盘中',tarot:'言澈在洗牌...',liuren:'天枢起课中',qimen:'天枢排盘中'};
@@ -202,26 +230,41 @@ async function ask(){
   }
 
   document.getElementById('result').classList.add('show');
-  document.getElementById('resultText').innerHTML=`${loading[currentMode]}...`;
+  document.getElementById('resultText').innerHTML=`<span style="font-size:18px">${loading[currentMode]}</span>`;
   remaining--;updateUI();
 
   try{
+    // 检查API Key（优先用localStorage中用户自设的，否则用默认Key）
+    const apiKey=localStorage.getItem('ds_key')||'sk-26c9e6a7cd044cf3a8beb33cc6a12951';
+    if(!apiKey||apiKey.length<10){
+      document.getElementById('resultText').innerHTML='<div style="font-size:16px;color:#ffd700;margin-bottom:10px">⚠️ 服务异常</div>请稍后重试';
+      remaining++;updateUI();return;
+    }
     const apiUrl=PROXY||'https://api.deepseek.com/v1/chat/completions';
     const headers={'Content-Type':'application/json'};
-    if(!PROXY)headers['Authorization']='Bearer '+localStorage.getItem('ds_key')||'';
+    if(!PROXY)headers['Authorization']='Bearer '+apiKey;
     const r=await fetch(apiUrl,{method:'POST',headers,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:sp},{role:'user',content:prompt}],temperature:0.9,max_tokens:400})});
-    const d=await r.json();const a=d.choices[0].message.content;
+    const d=await r.json();
+    if(d.error){throw new Error(d.error.message||'API错误')}
+    const a=d.choices[0].message.content;
     document.getElementById('resultText').innerHTML=a.replace(/\n/g,'<br>');
-    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？加微信送 10 次，随时聊。</span>';
+    // 显示追问区
+    document.getElementById('followUp').style.display='block';
+    document.getElementById('followUpInput').value='';
+    document.getElementById('followUpHistory').innerHTML='';
+    window._lastReading={mode:currentMode,answer:a,name:name,prompt:prompt};
+    // 更新洞察进度（排盘也计数）
+    updateInsightProgress();
+    if(remaining<=1)document.getElementById('resultText').innerHTML+='<br><br><span style="font-size:11px;color:rgba(201,169,110,.5)">次数快用完了？分享给好友各得2次 ✨</span>';
     saveHistory(name,currentMode,q,a);loadHistory();
     
     // v2: 记录到对话日志 + 触发潜意识分析
     addLog(name,currentMode,q,a);
-    const totalForMode = getLog().filter(l=>l.mode===currentMode).length;
+    const totalForMode = getLog().filter(l=>l.m===currentMode).length;
     if(totalForMode % SC_INTERVAL === 0){
       runSC(currentMode); // 不await，后台运行不阻塞
     }
-  }catch(e){document.getElementById('resultText').innerHTML='此刻无法感应，稍后再试';remaining++;updateUI()}
+  }catch(e){document.getElementById('resultText').innerHTML=`<div style="font-size:14px;color:#c9a96e">⚠️ ${e.message||'网络或API错误'}</div><br><span style="font-size:11px;color:rgba(232,213,183,.3)">检查API Key是否正确、余额是否充足</span>`;remaining++;updateUI()}
 }
 
 function share(){
@@ -239,7 +282,91 @@ function showPayModal(){document.getElementById('payModal').classList.add('show'
 function closeWx(){document.getElementById('wechatModal').classList.remove('show')}
 function copyWx(){const id=document.getElementById('wxIdText').textContent;navigator.clipboard.writeText(id);toast('已复制微信号，去微信粘贴添加')}
 
+function showUnlockUI(){const el=document.getElementById('unlockUI');el.style.display=el.style.display==='none'?'block':'none'}
+function tryUnlockUI(){
+  const code=document.getElementById('unlockCodeInput').value.trim();
+  if(!code){toast('请输入解锁码');return}
+  tryUnlock(code);
+}
+
+// ═══ 追问（排盘后连续对话） ═══
+async function followUpSend(){
+  const input=document.getElementById('followUpInput');
+  const msg=input.value.trim();
+  if(!msg||!window._lastReading)return;
+  input.value='';
+  const r=window._lastReading;
+  const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[r.mode];
+  const hEl=document.getElementById('followUpHistory');
+  
+  hEl.innerHTML+=`<div style="margin-bottom:4px;color:rgba(201,169,110,.6)">你: ${msg}</div>`;
+  hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(232,213,183,.3);font-size:11px">${nm}在想...</div>`;
+  hEl.scrollTop=hEl.scrollHeight;
+  
+  try{
+    const resp=await fetch('https://api.deepseek.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sk-26c9e6a7cd044cf3a8beb33cc6a12951'},
+      body:JSON.stringify({model:'deepseek-chat',messages:[
+        {role:'system',content:`你是${nm}。刚才给${r.name}做了一次${r.mode==='ziwei'?'紫微':r.mode==='bazi'?'八字':r.mode==='tarot'?'塔罗':r.mode==='liuren'?'六壬':'奇门'}解读。之前解读结果:${r.answer.slice(0,200)}。现在用户在追问。回应用户的追问，不超过150字，保持你的人格风格。`},
+        {role:'user',content:msg}
+      ],temperature:0.9,max_tokens:300})
+    });
+    const d=await resp.json();
+    if(d.error)throw new Error(d.error.message);
+    const reply=d.choices[0].message.content;
+    hEl.innerHTML=hEl.innerHTML.replace(`${nm}在想...</div>`,'');
+    hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(232,213,183,.5)">${nm}: ${reply}</div>`;
+    hEl.scrollTop=hEl.scrollHeight;
+    // 计入对话日志
+    addLog(r.name,r.mode,msg,reply);
+    saveHistory(r.name,r.mode,msg,reply);
+    // 显示+1提示
+    const prev=getLog().filter(l=>l.m===r.mode).length-1;
+    const nextThresh=Math.ceil((prev+1)/SC_INTERVAL)*SC_INTERVAL;
+    const left=nextThresh-(prev+1);
+    if(left>0)toast('追问已计入 · 再聊'+left+'次解锁洞察');
+    else toast('洞察已解锁！点天枢眼中的你查看');
+    updateInsightProgress(r.mode);
+    // 检查是否触发洞察
+    if((prev+1) % SC_INTERVAL === 0){
+      runSC(r.mode);
+    }
+  }catch(e){
+    hEl.innerHTML=hEl.innerHTML.replace(`${nm}在想...</div>`,'');
+    hEl.innerHTML+=`<div style="margin-bottom:8px;color:rgba(201,169,110,.4);font-size:11px">⚠️ 追问失败，稍后再试</div>`;
+    hEl.scrollTop=hEl.scrollHeight;
+  }
+}
+
 // ═══ v3 进化规则加载 ═══
+function showConversationLog(name,mode,q,answer){
+  const log=getLog();const el=document.getElementById('conversationLog');
+  const list=document.getElementById('conversationList');
+  const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
+  const recent=log.filter(l=>l.m===mode).slice(-7);
+  let html='';
+  for(const l of recent){
+    html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:6px"><span style="color:rgba(201,169,110,.6)">你:</span> ${(l.qs||l.q||'').slice(0,60)}<br><span style="color:rgba(232,213,183,.4)">${nm}:</span> ${(l.as||l.a||'').slice(0,80)}</div>`;
+  }
+  html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(201,169,110,.06);border-radius:6px;border-left:2px solid rgba(201,169,110,.3)"><span style="color:rgba(201,169,110,.8)">你:</span> ${q.slice(0,60)}<br><span style="color:rgba(232,213,183,.6)">${nm}:</span> ${answer.slice(0,80)}</div>`;
+  list.innerHTML=html;
+  updateInsightProgress(mode);
+}
+function updateInsightProgress(mode){
+  if(!mode)mode=currentMode;
+  const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
+  const total=getLog().filter(l=>l.m===mode).length;
+  if(total===0){document.getElementById('insightProgress').innerHTML='';return}
+  const remaining=SC_INTERVAL-(total%SC_INTERVAL);
+  if(remaining>0&&remaining<SC_INTERVAL){
+    document.getElementById('insightProgress').innerHTML='「'+nm+'」再聊 <b style="color:rgba(201,169,110,.5)">'+remaining+'</b> 次解锁一条洞察';
+  }else{
+    document.getElementById('insightProgress').innerHTML='「'+nm+'」洞察已生成，点 <b style="color:rgba(201,169,110,.5)">🔍天枢眼中的你</b> 查看';
+  }
+}
+
+// ═══ v3 进化规则加载 ═══ (keep)
 const EVOLVED_RULES={};
 (async function loadEvolvedRules(){
   try{
@@ -271,26 +398,35 @@ function addLog(n,m,q,a){
   localStorage.setItem('tv2_log',JSON.stringify(l))
 }
 async function runSC(mode){
-  const log=getLog().filter(l=>l.mode===mode).slice(-SC_INTERVAL);
+  const log=getLog().filter(l=>l.m===mode).slice(-SC_INTERVAL);
   if(log.length<SC_INTERVAL)return;
   const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[mode];
-  const dims={ziwei:'分析用户问什么宫位最多、哪个年龄段在反复问、你对哪类星曜判断偏保守、有没有重复提问者。',bazi:'分析八字用户最关心什么、和紫微用户差异、三派哪派解释最被理解、有没有说得太绝对的。',tarot:'分析塔罗用户问最多什么类型、一张牌是否够用、有没有因温柔没说实话。',liuren:'分析用户问什么时机最多、有没有起课修正时刻。',qimen:'分析用户问什么方位策略、你对哪个场景最没把握。'};
-  const lt=log.map((l,i)=>`[${i+1}]${l.n}:${l.qs}→${l.as}`).join('\n');
+  const prev=getIns(mode);
+  let prevCtx='';
+  if(prev.history&&prev.history.length>0){
+    prevCtx='之前的洞察:\n'+prev.history.map((h,i)=>`第${i+1}次:${h.s}`).join('\n');
+  }
+  const lt=log.map((l,i)=>`[${i+1}]${l.n}:${l.qs||l.q}→${(l.as||l.a||'').slice(0,60)}`).join('\n');
   try{
-    const u=PROXY||'https://api.deepseek.com/v1/chat/completions';
-    const h={'Content-Type':'application/json'};
-    if(!PROXY)h['Authorization']='Bearer '+(localStorage.getItem('ds_key')||'');
-    const r=await fetch(u,{method:'POST',headers:h,body:JSON.stringify({model:'deepseek-chat',messages:[{role:'system',content:'你是AI潜意识观察层。50字以内。精准。'},{role:'user',content:`你是${nm}的潜意识。观察过去${log.length}次对话:\n${lt}\n${dims[mode]}\n50字以内总结核心洞察。`}],temperature:0.7,max_tokens:120})});
-    const d=await r.json();const ins=d.choices[0].message.content;
-    const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:ins,mode}];
-    setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
-    console.log('[潜意识·'+nm+']',ins.slice(0,60))
-  }catch(e){console.log('[潜意识] 失败:',e.message);
-    // 本地降级：API失败时，用简单规则生成洞察
-    const fallback=`你最近问的${nm}问题偏向${log[0]?log[0].qs.slice(0,10):'命理'}方向。多聊几次，${nm}会更懂你。`;
-    const p=getIns(mode);const hist=[...p.history.slice(-9),{t:Date.now(),s:fallback,mode}];
-    setIns(mode,{s:fallback,u:Date.now(),n:p.n+SC_INTERVAL,history:hist});
-    console.log('[潜意识·降级]',fallback.slice(0,60));
+    const u='https://api.deepseek.com/v1/chat/completions';
+    const hd={'Content-Type':'application/json','Authorization':'Bearer sk-26c9e6a7cd044cf3a8beb33cc6a12951'};
+    const r=await fetch(u,{method:'POST',headers:hd,body:JSON.stringify({model:'deepseek-chat',messages:[
+      {role:'system',content:'你是'+nm+'的潜意识观察层。你正在逐渐认识一个人。每次给你最近5次对话，你要更新对ta的整体理解。像老朋友一样说出你眼中ta的样子——不是冷冰冰的数据总结，是温暖的、有洞察的观察。80字以内。'},
+      {role:'user',content:`${prevCtx?prevCtx+'\n\n基于以上，再结合最近的对话——\n':''}最近${log.length}次对话:\n${lt}\n\n请更新你对ta的整体理解。这次你看到了什么？和之前有什么变化？${nm}眼中的ta是什么样的人？`}
+    ],temperature:0.8,max_tokens:150})});
+    const d=await r.json();
+    if(d.error)throw new Error(d.error.message);
+    const ins=d.choices[0].message.content;
+    const p=getIns(mode);const hist=[...p.history,{t:Date.now(),s:ins,mode}];
+    setIns(mode,{s:ins,u:Date.now(),n:p.n+SC_INTERVAL,history:hist.slice(-20)});
+    console.log('[潜意识·'+nm+']',ins.slice(0,60));
+  }catch(e){
+    // 降级：本地拼一个简单总结
+    const names=[...new Set(log.map(l=>l.n))].slice(0,3);
+    const topics=[...new Set(log.map(l=>(l.qs||l.q||'').slice(0,8)))]; 
+    const fallback=`最近和${nm}聊了${log.length}次。你问过关于${topics.slice(0,3).join('、')}的话题。${nm}开始慢慢认识你了。`;
+    const p=getIns(mode);const hist=[...p.history,{t:Date.now(),s:fallback,mode}];
+    setIns(mode,{s:fallback,u:Date.now(),n:p.n+SC_INTERVAL,history:hist.slice(-20)});
   }
 }
 function richSp(mode,base){
@@ -304,7 +440,6 @@ function richSp(mode,base){
 }
 
 // ═══ 洞察导出：前2条免费，第3条需解锁 ═══
-const UNLOCKED_KEY='tv2_unlocked';
 function isUnlocked(){
   const v=localStorage.getItem(UNLOCKED_KEY);
   if(!v||v==='0')return false;
@@ -327,28 +462,45 @@ function exportInsights(){
     if(d.history)for(const h of d.history)hist.push({...h,mode:names[m]||m});
   }
   hist.sort((a,b)=>a.t-b.t);
-  if(!hist.length){toast('还没有洞察。多聊几次再来。');return}
   
-  const FREE=2;const total=hist.length;const unlocked=isUnlocked();
-  let text=`🔮 我们眼中的你\n━━━━━━━━━━\n`;
-  let freeCount=0;
-  for(let i=0;i<hist.length;i++){
-    const h=hist[i];
-    if(freeCount<FREE||unlocked){
-      text+=`\n📍 第${i+1}次洞察 [${h.mode}]\n${h.s}\n`;
-      if(freeCount<FREE)freeCount++;
-    }else{
-      text+=`\n🔒 第${i+1}次洞察 [${h.mode}]\n`;
-      text+=`你已经和天枢聊了这么多次。它开始认识你了。\n想看到全部洞察？\n\n关注「理解心命」→ 发刊词赞赏 → 发「解锁」 → 回来输入\n`;
-      text+=`感谢码每7天更新\n`;
-      text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
-      break;
+  if(!hist.length){
+    // 没有洞察时，显示最近对话记录
+    const conv=getLog();
+    if(conv.length===0){toast('先聊几次，天枢才能认识你');return}
+    let text='🔮 AI 眼中的你\n━━━━━━━━━━\n\n';
+    text+='再聊几次，天枢就能读懂你了。\n\n';
+    const recent=conv.slice(-10).reverse();
+    for(const c of recent){
+      const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.m]||c.m;
+      text+=`📍 [${nm}] ${(c.qs||c.q||'').slice(0,40)}\n`;
+    }
+    document.getElementById('result').classList.add('show');
+    document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');
+    return;
+  }
+  
+  const FREE=2;const unlocked=isUnlocked();
+  let text=`🔮 AI 眼中的你\n━━━━━━━━━━\n\n`;
+  const latest=hist[hist.length-1];
+  text+=`<span style="font-size:16px;color:#e8d5b7">${latest.s}</span>\n\n`;
+  if(unlocked){
+    if(hist.length>1){
+      text+=`<span style="font-size:10px;color:rgba(201,169,110,.4)">— 认识你的过程 —</span>\n`;
+      for(let i=0;i<hist.length-1;i++){
+        text+=`<span style="font-size:10px;color:rgba(232,213,183,.3)">第${i+1}次: ${hist[i].s.slice(0,60)}</span>\n`;
+      }
+    }
+    const rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
+    text+=`\n━━━━━━━━━━\n🔓 剩余${rd}天 · ${hist.length}次洞察`;
+  }else{
+    for(let i=0;i<Math.min(hist.length,FREE);i++){
+      text+=`<span style="font-size:10px;color:rgba(232,213,183,.3)">${hist[i].s.slice(0,60)}</span>\n`;
+    }
+    if(hist.length>FREE){
+      text+=`\n🔒 还有${hist.length-FREE}次洞察待解锁\n`;
+      text+=`<div style="margin-top:8px"><input id="unlockInput" placeholder="输入解锁码" style="width:60%;display:inline;font-size:13px;padding:8px 12px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#e8d5b7;border-radius:8px"><button onclick="tryUnlock(document.getElementById('unlockInput').value)" style="width:35%;display:inline;margin-left:4px;background:rgba(201,169,110,.2);border:1px solid rgba(201,169,110,.3);color:#e8d5b7;padding:8px;border-radius:8px;font-size:13px;cursor:pointer">解锁</button></div>`;
     }
   }
-  if(unlocked){
-    const rd=Math.ceil((parseInt(localStorage.getItem(UNLOCKED_KEY))-Date.now())/86400000);
-    text+=`\n━━━━━━━━━━\n🔓 已解锁 · 剩余${rd}天 · 全部${total}条洞察`;
-  }else text+=`\n\n━━━━━━━━━━\n${total}条洞察 · ${freeCount}条免费 · ${total-freeCount}条待解锁`;
   
   document.getElementById('result').classList.add('show');
   document.getElementById('resultText').innerHTML=text.replace(/\n/g,'<br>');

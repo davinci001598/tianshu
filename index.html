@@ -260,7 +260,7 @@ async function ask(){
     
     // v2: 记录到对话日志 + 触发潜意识分析
     addLog(name,currentMode,q,a);
-    const totalForMode = getLog().filter(l=>l.mode===currentMode).length;
+    const totalForMode = getLog().filter(l=>l.m===currentMode).length;
     if(totalForMode % SC_INTERVAL === 0){
       runSC(currentMode); // 不await，后台运行不阻塞
     }
@@ -322,7 +322,7 @@ async function followUpSend(){
     addLog(r.name,r.mode,msg,reply);
     saveHistory(r.name,r.mode,msg,reply);
     // 显示+1提示
-    const prev=getLog().filter(l=>l.mode===r.mode).length-1;
+    const prev=getLog().filter(l=>l.m===r.mode).length-1;
     const nextThresh=Math.ceil((prev+1)/SC_INTERVAL)*SC_INTERVAL;
     const left=nextThresh-(prev+1);
     if(left>0)toast('追问已计入 · 再聊'+left+'次解锁洞察');
@@ -344,7 +344,7 @@ function showConversationLog(name,mode,q,answer){
   const log=getLog();const el=document.getElementById('conversationLog');
   const list=document.getElementById('conversationList');
   const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
-  const recent=log.filter(l=>l.mode===mode).slice(-7);
+  const recent=log.filter(l=>l.m===mode).slice(-7);
   let html='';
   for(const l of recent){
     html+=`<div style="margin-bottom:6px;padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:6px"><span style="color:rgba(201,169,110,.6)">你:</span> ${(l.qs||l.q||'').slice(0,60)}<br><span style="color:rgba(232,213,183,.4)">${nm}:</span> ${(l.as||l.a||'').slice(0,80)}</div>`;
@@ -356,7 +356,7 @@ function showConversationLog(name,mode,q,answer){
 function updateInsightProgress(mode){
   if(!mode)mode=currentMode;
   const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[mode]||mode;
-  const total=getLog().filter(l=>l.mode===mode).length;
+  const total=getLog().filter(l=>l.m===mode).length;
   if(total===0){document.getElementById('insightProgress').innerHTML='';return}
   const remaining=SC_INTERVAL-(total%SC_INTERVAL);
   if(remaining>0&&remaining<SC_INTERVAL){
@@ -398,7 +398,7 @@ function addLog(n,m,q,a){
   localStorage.setItem('tv2_log',JSON.stringify(l))
 }
 async function runSC(mode){
-  const log=getLog().filter(l=>l.mode===mode).slice(-SC_INTERVAL);
+  const log=getLog().filter(l=>l.m===mode).slice(-SC_INTERVAL);
   if(log.length<SC_INTERVAL)return;
   const nm={ziwei:'天枢',bazi:'沈砚',tarot:'言澈',liuren:'天枢',qimen:'天枢'}[mode];
   const prev=getIns(mode);
@@ -471,7 +471,7 @@ function exportInsights(){
     text+='再聊几次，天枢就能读懂你了。\n\n';
     const recent=conv.slice(-10).reverse();
     for(const c of recent){
-      const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.mode]||c.mode;
+      const nm={ziwei:'紫微',bazi:'八字',tarot:'塔罗',liuren:'六壬',qimen:'奇门'}[c.m]||c.m;
       text+=`📍 [${nm}] ${(c.qs||c.q||'').slice(0,40)}\n`;
     }
     document.getElementById('result').classList.add('show');
